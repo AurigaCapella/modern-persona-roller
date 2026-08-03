@@ -1,6 +1,7 @@
 # 现代女性人设 Roll 机
 
 一个零依赖、零后端的现代 ACGN 女性人设随机生成器。打开网页即可生成姓名、身材、发型发色、瞳色、身体数据、肤色、穿搭、鞋袜配饰、融合性格，以及可直接用于动漫绘图模型的英文提示词。
+不想下载可以使用GitHub Page页: https://aurigacapella.github.io/modern-persona-roller/
 
 ## 当前版本
 
