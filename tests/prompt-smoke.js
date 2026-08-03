@@ -46,11 +46,60 @@ const testSource = `${scriptMatch[1].slice(0,cutoff)}
       throw new Error("鞋袜配饰扩充量不足：" + profile.style);
     }
   }
+  state.filters.bodyType = "youthful";
+  state.filters.heightMin = 145;
+  state.filters.heightMax = 190;
+  let heightAbove170 = 0;
+  let heightCenterCount = 0;
+  let heightEdgeCount = 0;
+  for (let i = 0; i < 10000; i += 1) {
+    generateBody();
+    generateMeasurements();
+    const height = Number(state.values.measurements.match(/身高 (\\d+)/)[1]);
+    if (height < 145 || height > 190) throw new Error("身高超出自定义范围");
+    if (height > 170) heightAbove170 += 1;
+    if (height >= 157 && height <= 167) heightCenterCount += 1;
+    if (height <= 146 || height >= 189) heightEdgeCount += 1;
+  }
+  if (!heightAbove170) throw new Error("少女感体型未能生成 170 cm 以上身高");
+  if (heightCenterCount <= heightEdgeCount * 8) throw new Error("身高边缘值权重过高");
+
+  state.filters.heightMin = 172;
+  state.filters.heightMax = 175;
+  for (let i = 0; i < 200; i += 1) {
+    generateMeasurements();
+    const height = Number(state.values.measurements.match(/身高 (\\d+)/)[1]);
+    if (height < 172 || height > 175) throw new Error("窄身高范围未生效");
+  }
+
+  state.filters.outfitType = "random";
+  state.filters.finishingMode = "linked";
+  generateOutfit();
+  generateFinishing();
+  if (state.meta.finishingProfileStyle !== state.meta.outfitProfile.style) throw new Error("联动模式未跟随衣着");
+  const linkedStyle = state.meta.outfitProfile.style;
+  state.filters.finishingMode = "independent";
+  let independentStyleFound = false;
+  for (let i = 0; i < 300; i += 1) {
+    generateFinishing();
+    if (state.meta.finishingProfileStyle !== linkedStyle) independentStyleFound = true;
+    const prompts = buildImagePrompts();
+    if (/[\u3400-\u9fff]/.test(prompts.positive + prompts.negative)) throw new Error("独立鞋袜配饰提示词含未翻译中文");
+  }
+  if (!independentStyleFound) throw new Error("独立模式仍被绑定到当前衣着");
+  state.locked = new Set(["finishing"]);
+  state.filters.finishingMode = "linked";
+  updateFinishingLockDependency();
+  if (!state.locked.has("outfit") || !state.meta.finishingAutoLockedOutfit) throw new Error("联动锁定依赖未生效");
+  state.filters.finishingMode = "independent";
+  updateFinishingLockDependency();
+  if (state.locked.has("outfit") || state.meta.finishingAutoLockedOutfit) throw new Error("独立模式未解除自动锁定依赖");
   globalThis.promptTestReport = {
     rolls: 400,
     presets: promptTestPresets.length,
     profiles: promptTestProfiles.length,
-    finishingEntries: promptTestProfiles.reduce((total,profile) => total + profile.shoes.length + profile.socks.length + profile.accessories.length,0)
+    finishingEntries: promptTestProfiles.reduce((total,profile) => total + profile.shoes.length + profile.socks.length + profile.accessories.length,0),
+    tallYouthful: heightAbove170
   };
 `;
 
@@ -59,4 +108,4 @@ const context = {
   console
 };
 vm.runInNewContext(testSource, context, { filename: "index.html" });
-console.log(`Prompt smoke test OK: ${context.promptTestReport.rolls} rolls × ${context.promptTestReport.presets} presets; ${context.promptTestReport.profiles} outfit profiles; ${context.promptTestReport.finishingEntries} finishing entries`);
+console.log(`Prompt smoke test OK: ${context.promptTestReport.rolls} rolls × ${context.promptTestReport.presets} presets; ${context.promptTestReport.profiles} outfit profiles; ${context.promptTestReport.finishingEntries} finishing entries; ${context.promptTestReport.tallYouthful} youthful rolls above 170 cm`);

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="现代女性人设随机生成器">
-  <title>现代人设 Roll 机 v1.2</title>
+  <title>现代人设 Roll 机 v1.3</title>
   <style>
     :root {
       color-scheme: dark;
@@ -52,6 +52,12 @@
     .segment { min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); background: rgba(255,255,255,.025); cursor: pointer; }
     .segment:hover { color: var(--text); border-color: rgba(255,255,255,.22); }
     .segment[aria-pressed="true"] { color: #21140f; border-color: transparent; background: linear-gradient(135deg, var(--gold), var(--accent)); font-weight: 900; }
+    .range-row { display: flex; align-items: center; gap: 10px; }
+    .range-field { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .range-field span, .range-separator { color: var(--muted); font-size: 12px; }
+    .range-input { width: 96px; min-height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: rgba(255,255,255,.035); font: inherit; }
+    .range-input:focus { outline: 3px solid rgba(241,200,108,.25); border-color: var(--gold); }
+    .control-hint { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
 
     .toolbar { position: sticky; top: 10px; z-index: 10; display: flex; flex-wrap: wrap; gap: 9px; padding: 13px; border: 1px solid var(--line); border-radius: 18px; background: rgba(18,19,25,.88); box-shadow: 0 10px 40px rgba(0,0,0,.25); backdrop-filter: blur(18px); }
     .button { min-height: 43px; padding: 0 16px; border: 1px solid var(--line); border-radius: 11px; color: var(--text); background: var(--panel-2); cursor: pointer; transition: transform .18s ease, border-color .18s ease; }
@@ -108,6 +114,10 @@
       .prompt-grid { grid-template-columns: 1fr; }
       .prompt-head { display: grid; }
       .prompt-select { width: 100%; }
+      .range-row { align-items: stretch; flex-direction: column; }
+      .range-field { justify-content: space-between; }
+      .range-input { width: min(180px, 55vw); }
+      .range-separator { display: none; }
       .toolbar { top: 5px; }
       .button { flex: 1 1 auto; }
       .spacer { display: none; }
@@ -124,7 +134,7 @@
         <h1>现代人设 Roll 机</h1>
         <p class="subtitle">先选择想控制的方向，再生成一名完整的现代女性角色。发型、配色、身材数据与穿搭会沿着同一套逻辑联动。</p>
       </div>
-      <span class="version-badge">女性 · 18+ · v1.2</span>
+      <span class="version-badge">女性 · 18+ · v1.3</span>
     </header>
 
     <section class="settings" aria-labelledby="settingsTitle">
@@ -171,8 +181,8 @@
     };
 
     const BODY_TYPES = [
-      { key: "petite", label: "娇小型（成年）", descriptions: ["骨架纤细，重心轻盈", "小骨架，四肢线条利落", "身形小巧，比例匀称", "肩线窄而轻巧，整体玲珑", "个子娇小但体态挺拔"], height: [148,158], bust: [74,84], waist: [55,63], hips: [78,88] },
-      { key: "youthful", label: "少女感（成年）", descriptions: ["线条轻盈，带有运动感", "骨架匀称，轮廓清爽", "身形修长，气质轻快", "纤长舒展，肌肉线条柔和", "比例均衡，带有活力感"], height: [156,168], bust: [78,90], waist: [58,68], hips: [84,95] },
+      { key: "petite", label: "娇小型", descriptions: ["骨架纤细，重心轻盈", "小骨架，四肢线条利落", "身形小巧，比例匀称", "肩线窄而轻巧，整体玲珑", "个子娇小但体态挺拔"], height: [148,158], bust: [74,84], waist: [55,63], hips: [78,88] },
+      { key: "youthful", label: "少女感", descriptions: ["线条轻盈，带有运动感", "骨架匀称，轮廓清爽", "身形修长，气质轻快", "纤长舒展，肌肉线条柔和", "比例均衡，带有活力感"], height: [156,168], bust: [78,90], waist: [58,68], hips: [84,95] },
       { key: "mature", label: "成女型", descriptions: ["曲线舒展，气场成熟", "骨架挺拔，轮廓明晰", "身形丰润而匀称", "肩颈舒展，腰臀曲线明显", "高挑挺拔，存在感鲜明"], height: [160,174], bust: [84,98], waist: [62,76], hips: [88,103] }
     ];
 
@@ -541,7 +551,9 @@
       { key:"bodyType", label:"02 · 体型", options:[["random","随机"],["petite","娇小（成年）"],["youthful","少女感（成年）"],["mature","成女"]] },
       { key:"hairMode", label:"03 · 发色模式", options:[["random","随机"],["pure","纯色"],["dyed","染色"]] },
       { key:"eyeMode", label:"06 · 瞳色模式", options:[["random","随机"],["pure","纯色"],["hetero","异色瞳"]] },
-      { key:"outfitType", label:"09 · 服装结构", wide:true, options:[["random","随机"],["separates","上下装"],["dress","连衣裙"],["jumpsuit","连体装"],["layered","叠穿"]] }
+      { key:"heightRange", label:"07 · 身高范围（cm）", type:"range", wide:true },
+      { key:"outfitType", label:"09 · 服装结构", wide:true, options:[["random","随机"],["separates","上下装"],["dress","连衣裙"],["jumpsuit","连体装"],["layered","叠穿"]] },
+      { key:"finishingMode", label:"10 · 鞋袜配饰联动", wide:true, options:[["linked","跟随当前衣着"],["independent","解除绑定 · 独立 Roll"]] }
     ];
 
     const FIELDS = [
@@ -560,7 +572,10 @@
 
     const state = {
       values: {}, meta: {}, swatches: {}, locked: new Set(), rollCount: 0,
-      filters: { nameCulture:"random", bodyType:"random", hairMode:"random", eyeMode:"random", outfitType:"random" },
+      filters: {
+        nameCulture:"random", bodyType:"random", hairMode:"random", eyeMode:"random", outfitType:"random",
+        finishingMode:"linked", heightMin:145, heightMax:185
+      },
       promptPreset: "novelai"
     };
 
@@ -584,21 +599,54 @@
         const label = document.createElement("span");
         label.className = "control-label";
         label.textContent = filter.label;
-        const segments = document.createElement("div");
-        segments.className = "segments";
-        segments.setAttribute("role", "group");
-        segments.setAttribute("aria-label", filter.label);
-        filter.options.forEach(([value,text]) => {
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = "segment";
-          button.dataset.filter = filter.key;
-          button.dataset.value = value;
-          button.textContent = text;
-          button.addEventListener("click", () => setFilter(filter.key,value));
-          segments.append(button);
-        });
-        group.append(label,segments);
+        group.append(label);
+        if (filter.type === "range") {
+          const row = document.createElement("div");
+          row.className = "range-row";
+          [["heightMin","下限"],["heightMax","上限"]].forEach(([key,text],index) => {
+            if (index) {
+              const separator = document.createElement("span");
+              separator.className = "range-separator";
+              separator.textContent = "—";
+              row.append(separator);
+            }
+            const field = document.createElement("label");
+            field.className = "range-field";
+            const caption = document.createElement("span");
+            caption.textContent = text;
+            const input = document.createElement("input");
+            input.className = "range-input";
+            input.type = "number";
+            input.min = "135";
+            input.max = "210";
+            input.step = "1";
+            input.dataset.heightBound = key;
+            input.setAttribute("aria-label", `身高${text}`);
+            input.addEventListener("change", () => setHeightBound(key,input.value));
+            field.append(caption,input);
+            row.append(field);
+          });
+          const hint = document.createElement("p");
+          hint.className = "control-hint";
+          hint.id = "heightRangeHint";
+          group.append(row,hint);
+        } else {
+          const segments = document.createElement("div");
+          segments.className = "segments";
+          segments.setAttribute("role", "group");
+          segments.setAttribute("aria-label", filter.label);
+          filter.options.forEach(([value,text]) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "segment";
+            button.dataset.filter = filter.key;
+            button.dataset.value = value;
+            button.textContent = text;
+            button.addEventListener("click", () => setFilter(filter.key,value));
+            segments.append(button);
+          });
+          group.append(segments);
+        }
         controls.append(group);
       });
       updateControls();
@@ -606,14 +654,52 @@
 
     function setFilter(key,value) {
       state.filters[key] = value;
+      if (key === "finishingMode") updateFinishingLockDependency();
       updateControls();
       persist();
+    }
+
+    function normalizeHeightRange(changedKey) {
+      let min = Math.round(Number(state.filters.heightMin));
+      let max = Math.round(Number(state.filters.heightMax));
+      if (!Number.isFinite(min)) min = 145;
+      if (!Number.isFinite(max)) max = 185;
+      min = Math.max(135,Math.min(210,min));
+      max = Math.max(135,Math.min(210,max));
+      if (min > max) {
+        if (changedKey === "heightMin") max = min;
+        else min = max;
+      }
+      state.filters.heightMin = min;
+      state.filters.heightMax = max;
+    }
+
+    function setHeightBound(key,value) {
+      state.filters[key] = value;
+      normalizeHeightRange(key);
+      updateControls();
+      persist();
+    }
+
+    function updateFinishingLockDependency() {
+      if (state.filters.finishingMode === "independent") {
+        if (state.meta.finishingAutoLockedOutfit) state.locked.delete("outfit");
+        delete state.meta.finishingAutoLockedOutfit;
+      } else if (state.locked.has("finishing") && !state.locked.has("outfit")) {
+        state.locked.add("outfit");
+        state.meta.finishingAutoLockedOutfit = true;
+      }
     }
 
     function updateControls() {
       controls.querySelectorAll(".segment").forEach(button => {
         button.setAttribute("aria-pressed", String(state.filters[button.dataset.filter] === button.dataset.value));
       });
+      controls.querySelectorAll("[data-height-bound]").forEach(input => {
+        input.value = state.filters[input.dataset.heightBound];
+      });
+      const hint = controls.querySelector("#heightRangeHint");
+      if (hint) hint.textContent = `${state.filters.heightMin}–${state.filters.heightMax} cm · 体型常见值权重最高，越靠近上下限概率越低`;
     }
 
     function buildCards() {
@@ -752,20 +838,39 @@
       state.meta.bodyConfig = type;
     }
 
+    function weightedHeight(type) {
+      normalizeHeightRange();
+      const min = state.filters.heightMin;
+      const max = state.filters.heightMax;
+      const preferredCenter = (type.height[0] + type.height[1]) / 2;
+      const center = Math.max(min,Math.min(max,preferredCenter));
+      const spread = Math.max(4.5,(type.height[1] - type.height[0]) / 2.1);
+      const candidates = [];
+      let totalWeight = 0;
+      for (let value = min; value <= max; value += 1) {
+        const distance = (value - center) / spread;
+        const weight = Math.exp(-.5 * distance * distance) + .012;
+        totalWeight += weight;
+        candidates.push([value,totalWeight]);
+      }
+      const target = Math.random() * totalWeight;
+      return candidates.find(([,cumulative]) => target <= cumulative)?.[0] ?? Math.round(center);
+    }
+
     function generateMeasurements() {
       let type = BODY_TYPES.find(item => item.key === state.meta.bodyTypeKey);
       if (!type) {
         type = pick(BODY_TYPES);
         state.meta.bodyTypeKey = type.key;
       }
-      const height = integer(type.height);
+      const height = weightedHeight(type);
       let bust = integer(type.bust);
       let waist = integer(type.waist);
       let hips = integer(type.hips);
       if (bust <= waist + 14) bust = waist + 15;
       if (hips <= waist + 18) hips = waist + 19;
       state.values.measurements = `身高 ${height} cm · B/W/H ${bust}/${waist}/${hips} cm`;
-      state.meta.measurements = `胸围 ${bust} · 腰围 ${waist} · 臀围 ${hips}（相关区间生成）`;
+      state.meta.measurements = `胸围 ${bust} · 腰围 ${waist} · 臀围 ${hips} · 身高范围 ${state.filters.heightMin}–${state.filters.heightMax} cm（中间值高权重）`;
     }
 
     function generateHairColor() {
@@ -831,7 +936,8 @@
     }
 
     function generateFinishing() {
-      let profile = state.meta.outfitProfile;
+      const independent = state.filters.finishingMode === "independent";
+      let profile = independent ? pick(Object.values(OUTFITS).flat()) : state.meta.outfitProfile;
       if (!profile) {
         const typeKey = pick(Object.keys(OUTFITS));
         profile = pick(OUTFITS[typeKey]);
@@ -839,7 +945,8 @@
       }
       const [accessoryA,accessoryB] = pickTwoDistinct(profile.accessories);
       state.values.finishing = `${pick(profile.shoes)} · ${pick(profile.socks)}`;
-      state.meta.finishing = `配饰：${accessoryA} + ${accessoryB}`;
+      state.meta.finishingProfileStyle = profile.style;
+      state.meta.finishing = `${independent ? `独立风格：${profile.style} · ` : ""}配饰：${accessoryA} + ${accessoryB}`;
     }
 
     function personalitiesCompatible(a,b) {
@@ -888,7 +995,7 @@
       GENERATORS[key]();
       if (key === "body" && !state.locked.has("measurements")) generateMeasurements();
       if (key === "hairLength" && !state.locked.has("hairStyle")) generateHairStyle();
-      if (key === "outfit" && !state.locked.has("finishing")) generateFinishing();
+      if (key === "outfit" && state.filters.finishingMode === "linked" && !state.locked.has("finishing")) generateFinishing();
       renderAll(true);
       persist();
     }
@@ -896,11 +1003,18 @@
     function toggleLock(key) {
       if (state.locked.has(key)) {
         state.locked.delete(key);
+        if (key === "finishing" && state.meta.finishingAutoLockedOutfit) {
+          state.locked.delete("outfit");
+          delete state.meta.finishingAutoLockedOutfit;
+        }
       } else {
         state.locked.add(key);
         if (key === "hairStyle") state.locked.add("hairLength");
         if (key === "measurements") state.locked.add("body");
-        if (key === "finishing") state.locked.add("outfit");
+        if (key === "finishing" && state.filters.finishingMode === "linked") {
+          if (!state.locked.has("outfit")) state.meta.finishingAutoLockedOutfit = true;
+          state.locked.add("outfit");
+        }
       }
       renderAll(false);
       persist();
@@ -1100,7 +1214,8 @@
 
       const [shoes,socks] = String(state.values.finishing || "").split(" · ");
       tags.push(footwearPrompt(shoes || ""), socksPrompt(socks || ""));
-      const accessories = String(state.meta.finishing || "").replace(/^配饰：/, "").split(" + ");
+      const finishingMeta = String(state.meta.finishing || "");
+      const accessories = (finishingMeta.includes("配饰：") ? finishingMeta.split("配饰：").pop() : finishingMeta).split(" + ");
       tags.push(...accessories.map(accessoryPrompt));
       (state.meta.personalityKeys || []).forEach(key => tags.push(...(PERSONALITY_PROMPTS[key] || [])));
       return uniqueTags(tags);
@@ -1147,7 +1262,7 @@
     }
 
     function formatText() {
-      const lines = ["# 现代女性人设 v1.2", "", "- 性别：女性", "- 年龄范围：18+成年"];
+      const lines = ["# 现代女性人设 v1.3", "", "- 性别：女性", "- 年龄范围：18+成年"];
       FIELDS.forEach(field => {
         lines.push(`- ${field.label.slice(5)}：${state.values[field.key] || "未生成"}${state.meta[field.key] ? `（${state.meta[field.key]}）` : ""}`);
       });
@@ -1193,7 +1308,7 @@
     function downloadJson() {
       if (!state.values.name) return showToast("请先生成一份人设");
       const payload = {
-        version:"modern-v1.2", gender:"female", adult:true, generatedAt:new Date().toISOString(),
+        version:"modern-v1.3", gender:"female", adult:true, generatedAt:new Date().toISOString(),
         filters:state.filters,
         character:Object.fromEntries(FIELDS.map(field => [field.key,{value:state.values[field.key],detail:state.meta[field.key] || null,colors:state.swatches[field.key] || []}])),
         summary:document.querySelector("#summaryValue").textContent,
@@ -1229,6 +1344,9 @@
         state.locked = new Set(saved.locked || []);
         state.rollCount = Number(saved.rollCount) || 0;
         state.filters = {...state.filters,...(saved.filters || {})};
+        state.filters.finishingMode = state.filters.finishingMode === "independent" ? "independent" : "linked";
+        normalizeHeightRange();
+        updateFinishingLockDependency();
         state.promptPreset = PROMPT_PRESETS[saved.promptPreset] ? saved.promptPreset : "novelai";
         if (state.values.name && !state.values.personality) generatePersonality();
         persist();
