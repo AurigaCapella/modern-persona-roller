@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="现代女性人设随机生成器">
-  <title>现代人设 Roll 机 v1.4</title>
+  <title>现代人设 Roll 机 v1.5</title>
   <style>
     :root {
       color-scheme: dark;
@@ -134,7 +134,7 @@
         <h1>现代人设 Roll 机</h1>
         <p class="subtitle">先选择想控制的方向，再生成一名完整的现代女性角色。发型、配色、身材数据与穿搭会沿着同一套逻辑联动。</p>
       </div>
-      <span class="version-badge">女性 · 18+ · v1.4</span>
+      <span class="version-badge">女性 · 18+ · v1.5</span>
     </header>
 
     <section class="settings" aria-labelledby="settingsTitle">
@@ -468,7 +468,7 @@
       profile.accessories.push(...expansion.accessories);
     });
 
-    // 绘图提示词使用尽量通用的英文 Danbooru 风格标签，兼容 NovelAI、Animagine 与多数动漫模型。
+    // 标签预设兼容 NovelAI、Animagine 与多数动漫模型；GPT Image 使用结构化英文创作简报。
     const PROMPT_PRESETS = {
       novelai: {
         label: "NovelAI",
@@ -487,6 +487,10 @@
         prefix: ["high quality anime illustration", "detailed character design"],
         suffix: ["detailed face", "detailed clothing", "soft studio lighting", "simple background"],
         negative: ["low quality", "low resolution", "blurry", "bad anatomy", "bad hands", "extra fingers", "missing fingers", "extra limbs", "deformed body", "poorly drawn face", "text", "watermark", "logo"]
+      },
+      gptimage: {
+        label: "GPT Image 2",
+        format: "structured-brief"
       }
     };
 
@@ -767,6 +771,7 @@
       promptLabel.textContent = "绘图提示词 · IMAGE PROMPT";
       const promptNote = document.createElement("span");
       promptNote.className = "prompt-note";
+      promptNote.id = "promptNote";
       promptNote.textContent = "英文逗号标签，可直接粘贴到对应模型；只在本地生成，不会调用绘图 API。";
       promptTitle.append(promptLabel,promptNote);
       const preset = document.createElement("select");
@@ -795,6 +800,7 @@
         blockHead.className = "prompt-block-head";
         const blockTitle = document.createElement("span");
         blockTitle.className = "prompt-block-title";
+        blockTitle.id = `${kind}PromptTitle`;
         blockTitle.textContent = title;
         const copy = document.createElement("button");
         copy.className = "prompt-copy";
@@ -815,6 +821,7 @@
       const copyAll = document.createElement("button");
       copyAll.className = "button ghost";
       copyAll.type = "button";
+      copyAll.id = "copyAllPrompts";
       copyAll.textContent = "复制正向 + 负向";
       copyAll.addEventListener("click", () => copyPrompt("all"));
       promptFooter.append(copyAll);
@@ -1235,6 +1242,44 @@
     function buildImagePrompts() {
       const preset = PROMPT_PRESETS[state.promptPreset] || PROMPT_PRESETS.novelai;
       const characterTags = buildCharacterPromptTags();
+      if (preset.format === "structured-brief") {
+        const fixedDesignTags = characterTags.filter(tag => !["1girl","solo","adult woman","full body","standing","looking at viewer","fully clothed"].includes(tag));
+        const measurements = String(state.values.measurements || "").match(/身高\s*(\d+)\s*cm\s*·\s*B\/W\/H\s*(\d+)\/(\d+)\/(\d+)\s*cm/);
+        const colorLines = [];
+        const hairColors = state.swatches.hairColor || [];
+        const eyeColors = state.swatches.eyes || [];
+        const skinColors = state.swatches.skin || [];
+        const outfitColors = state.swatches.outfit || [];
+        if (hairColors.length === 1) colorLines.push(`Hair color reference: ${hairColors[0]}.`);
+        if (hairColors.length > 1) colorLines.push(`Hair palette: base color ${hairColors[0]}, accent color ${hairColors[1]}.`);
+        if (eyeColors.length === 1) colorLines.push(`Eye color reference: ${eyeColors[0]}.`);
+        if (eyeColors.length > 1) colorLines.push(`Eye colors: left eye ${eyeColors[0]}, right eye ${eyeColors[1]}.`);
+        if (skinColors.length) colorLines.push(`Skin tone reference: ${skinColors[0]}.`);
+        if (outfitColors.length > 1) colorLines.push(`Outfit palette: ${outfitColors[0]} and ${outfitColors[1]}.`);
+
+        const subjectLines = [
+          "Subject:",
+          "One fully clothed adult woman, shown alone, standing and looking toward the viewer.",
+          measurements ? `Height: ${measurements[1]} cm. Body measurements (bust/waist/hips): ${measurements[2]}/${measurements[3]}/${measurements[4]} cm.` : "",
+          `Fixed character design: ${fixedDesignTags.join(", ")}.`,
+          ...colorLines
+        ].filter(Boolean);
+        const positive = [
+          "Create a polished full-body modern anime character design illustration.",
+          subjectLines.join("\n"),
+          "Composition:\nShow the complete character from head to toe with both feet entirely inside the frame. Use a natural front three-quarter standing pose and a clean, light studio background.",
+          "Style and lighting:\nContemporary Japanese anime character illustration, clean linework, refined cel shading, detailed eyes, hair and fabric, harmonious colors, and soft diffuse studio lighting."
+        ].join("\n\n");
+        const constraints = [
+          "Constraints:",
+          "- Faithfully preserve every specified hairstyle, hair-color placement, eye color, clothing layer, shoe, sock, and accessory.",
+          "- Keep the selected color relationships coherent and visually distinct.",
+          "- Keep the anatomy and pose natural, with coherent hands, fingers, limbs, and body proportions.",
+          "- Include exactly one character; do not add extra people, limbs, clothing layers, or accessories.",
+          "- No text, captions, logos, signatures, or watermarks."
+        ].join("\n");
+        return { preset:preset.label, positive, negative:constraints };
+      }
       const positiveTags = state.promptPreset === "animagine"
         ? [...characterTags, ...preset.suffix, ...preset.prefix]
         : [...preset.prefix, ...characterTags, ...preset.suffix];
@@ -1251,9 +1296,22 @@
       const negative = document.querySelector("#negativePrompt");
       if (!preset || !positive || !negative) return;
       preset.value = PROMPT_PRESETS[state.promptPreset] ? state.promptPreset : "novelai";
+      const structured = PROMPT_PRESETS[preset.value]?.format === "structured-brief";
+      const promptNote = document.querySelector("#promptNote");
+      const positiveTitle = document.querySelector("#positivePromptTitle");
+      const negativeTitle = document.querySelector("#negativePromptTitle");
+      const copyAll = document.querySelector("#copyAllPrompts");
+      if (promptNote) promptNote.textContent = structured
+        ? "GPT Image 结构化英文创作简报；约束条件会随完整提示词一起复制，不会调用绘图 API。"
+        : "英文逗号标签，可直接粘贴到对应模型；只在本地生成，不会调用绘图 API。";
+      if (positiveTitle) positiveTitle.textContent = structured ? "图像描述" : "正向提示词";
+      if (negativeTitle) negativeTitle.textContent = structured ? "约束条件" : "负向提示词";
+      positive.setAttribute("aria-label", structured ? "图像描述" : "正向提示词");
+      negative.setAttribute("aria-label", structured ? "约束条件" : "负向提示词");
+      if (copyAll) copyAll.textContent = structured ? "复制完整 GPT Image 提示词" : "复制正向 + 负向";
       if (!state.values.name) {
-        positive.value = "生成一份人设后，这里会自动整理正向提示词。";
-        negative.value = "生成一份人设后，这里会自动整理负向提示词。";
+        positive.value = structured ? "生成一份人设后，这里会自动整理 GPT Image 图像描述。" : "生成一份人设后，这里会自动整理正向提示词。";
+        negative.value = structured ? "生成一份人设后，这里会自动整理约束条件。" : "生成一份人设后，这里会自动整理负向提示词。";
         return;
       }
       const prompts = buildImagePrompts();
@@ -1273,13 +1331,14 @@
     }
 
     function formatText() {
-      const lines = ["# 现代女性人设 v1.4", "", "- 性别：女性", "- 年龄范围：18+成年"];
+      const lines = ["# 现代女性人设 v1.5", "", "- 性别：女性", "- 年龄范围：18+成年"];
       FIELDS.forEach(field => {
         lines.push(`- ${field.label.slice(5)}：${state.values[field.key] || "未生成"}${state.meta[field.key] ? `（${state.meta[field.key]}）` : ""}`);
       });
       lines.push("", `> ${document.querySelector("#summaryValue").textContent}`);
       const prompts = buildImagePrompts();
-      lines.push("", `## 绘图提示词（${prompts.preset}）`, "", "### 正向", prompts.positive, "", "### 负向", prompts.negative);
+      const structured = PROMPT_PRESETS[state.promptPreset]?.format === "structured-brief";
+      lines.push("", `## 绘图提示词（${prompts.preset}）`, "", structured ? "### 图像描述" : "### 正向", prompts.positive, "", structured ? "### 约束条件" : "### 负向", prompts.negative);
       return lines.join("\n");
     }
 
@@ -1307,19 +1366,24 @@
     async function copyPrompt(kind) {
       if (!state.values.name) return showToast("请先生成一份人设");
       const prompts = buildImagePrompts();
+      const structured = PROMPT_PRESETS[state.promptPreset]?.format === "structured-brief";
       const text = kind === "positive"
         ? prompts.positive
         : kind === "negative"
           ? prompts.negative
-          : `Positive prompt:\n${prompts.positive}\n\nNegative prompt:\n${prompts.negative}`;
+          : structured
+            ? `${prompts.positive}\n\n${prompts.negative}`
+            : `Positive prompt:\n${prompts.positive}\n\nNegative prompt:\n${prompts.negative}`;
       await writeClipboard(text);
-      showToast(kind === "all" ? "正向与负向提示词已复制" : `${kind === "positive" ? "正向" : "负向"}提示词已复制`);
+      showToast(kind === "all"
+        ? structured ? "完整 GPT Image 提示词已复制" : "正向与负向提示词已复制"
+        : `${structured ? kind === "positive" ? "图像描述" : "约束条件" : kind === "positive" ? "正向" : "负向"}已复制`);
     }
 
     function downloadJson() {
       if (!state.values.name) return showToast("请先生成一份人设");
       const payload = {
-        version:"modern-v1.4", gender:"female", adult:true, generatedAt:new Date().toISOString(),
+        version:"modern-v1.5", gender:"female", adult:true, generatedAt:new Date().toISOString(),
         filters:state.filters,
         character:Object.fromEntries(FIELDS.map(field => [field.key,{value:state.values[field.key],detail:state.meta[field.key] || null,colors:state.swatches[field.key] || []}])),
         summary:document.querySelector("#summaryValue").textContent,

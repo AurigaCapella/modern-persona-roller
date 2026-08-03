@@ -25,7 +25,10 @@ const testSource = `${scriptMatch[1].slice(0,cutoff)}
     for (const presetKey of promptTestPresets) {
       state.promptPreset = presetKey;
       const prompts = buildImagePrompts();
-      if (!prompts.positive.includes("1girl")) throw new Error("正向提示词缺少 1girl");
+      if (presetKey !== "gptimage" && !prompts.positive.includes("1girl")) throw new Error("标签提示词缺少 1girl");
+      if (presetKey === "gptimage" && (!prompts.positive.includes("Subject:") || !prompts.negative.startsWith("Constraints:"))) {
+        throw new Error("GPT Image 结构化提示词格式不完整");
+      }
       if (!prompts.positive.includes("hair")) throw new Error("正向提示词缺少头发标签");
       if (!prompts.negative.length) throw new Error("负向提示词为空");
       if (/undefined|null/.test(prompts.positive)) throw new Error("正向提示词含无效值");
@@ -123,6 +126,32 @@ const testSource = `${scriptMatch[1].slice(0,cutoff)}
   if (Object.values(randomPersonalityCounts).some(count => count < 1500 || count > 2500)) {
     throw new Error("随机性格数量分布异常：" + JSON.stringify(randomPersonalityCounts));
   }
+
+  const promptUi = {
+    "#promptPreset": {value:"gptimage"},
+    "#positivePrompt": {value:"",setAttribute(name,value){ this[name] = value; }},
+    "#negativePrompt": {value:"",setAttribute(name,value){ this[name] = value; }},
+    "#promptNote": {textContent:""},
+    "#positivePromptTitle": {textContent:""},
+    "#negativePromptTitle": {textContent:""},
+    "#copyAllPrompts": {textContent:""},
+    "#summaryValue": {textContent:"测试人设汇总"}
+  };
+  document.querySelector = selector => promptUi[selector] || null;
+  state.promptPreset = "gptimage";
+  renderPrompt();
+  if (promptUi["#positivePromptTitle"].textContent !== "图像描述") throw new Error("GPT Image 图像描述标题未切换");
+  if (promptUi["#negativePromptTitle"].textContent !== "约束条件") throw new Error("GPT Image 约束条件标题未切换");
+  if (!promptUi["#copyAllPrompts"].textContent.includes("GPT Image")) throw new Error("GPT Image 复制按钮未切换");
+  if (!promptUi["#positivePrompt"].value.includes("Composition:")) throw new Error("GPT Image 图像描述未渲染");
+  if (!promptUi["#negativePrompt"].value.startsWith("Constraints:")) throw new Error("GPT Image 约束条件未渲染");
+  const exportedPromptText = formatText();
+  if (!exportedPromptText.includes("### 图像描述") || !exportedPromptText.includes("### 约束条件")) throw new Error("GPT Image 文本导出标题不正确");
+
+  state.promptPreset = "novelai";
+  renderPrompt();
+  if (promptUi["#positivePromptTitle"].textContent !== "正向提示词") throw new Error("标签预设正向标题未恢复");
+  if (promptUi["#negativePromptTitle"].textContent !== "负向提示词") throw new Error("标签预设负向标题未恢复");
   globalThis.promptTestReport = {
     rolls: 400,
     presets: promptTestPresets.length,
