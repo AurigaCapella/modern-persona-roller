@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="现代女性人设随机生成器">
-  <title>现代人设 Roll 机 v1.3</title>
+  <title>现代人设 Roll 机 v1.4</title>
   <style>
     :root {
       color-scheme: dark;
@@ -134,7 +134,7 @@
         <h1>现代人设 Roll 机</h1>
         <p class="subtitle">先选择想控制的方向，再生成一名完整的现代女性角色。发型、配色、身材数据与穿搭会沿着同一套逻辑联动。</p>
       </div>
-      <span class="version-badge">女性 · 18+ · v1.3</span>
+      <span class="version-badge">女性 · 18+ · v1.4</span>
     </header>
 
     <section class="settings" aria-labelledby="settingsTitle">
@@ -553,7 +553,8 @@
       { key:"eyeMode", label:"06 · 瞳色模式", options:[["random","随机"],["pure","纯色"],["hetero","异色瞳"]] },
       { key:"heightRange", label:"07 · 身高范围（cm）", type:"range", wide:true },
       { key:"outfitType", label:"09 · 服装结构", wide:true, options:[["random","随机"],["separates","上下装"],["dress","连衣裙"],["jumpsuit","连体装"],["layered","叠穿"]] },
-      { key:"finishingMode", label:"10 · 鞋袜配饰联动", wide:true, options:[["linked","跟随当前衣着"],["independent","解除绑定 · 独立 Roll"]] }
+      { key:"finishingMode", label:"10 · 鞋袜配饰联动", wide:true, options:[["linked","跟随当前衣着"],["independent","解除绑定 · 独立 Roll"]] },
+      { key:"personalityCount", label:"11 · 性格标签数量", wide:true, options:[["random","随机 1–3 个"],["1","1 个"],["2","2 个"],["3","3 个"]] }
     ];
 
     const FIELDS = [
@@ -574,7 +575,7 @@
       values: {}, meta: {}, swatches: {}, locked: new Set(), rollCount: 0,
       filters: {
         nameCulture:"random", bodyType:"random", hairMode:"random", eyeMode:"random", outfitType:"random",
-        finishingMode:"linked", heightMin:145, heightMax:185
+        finishingMode:"linked", personalityCount:"random", heightMin:145, heightMax:185
       },
       promptPreset: "novelai"
     };
@@ -954,13 +955,23 @@
     }
 
     function generatePersonality() {
-      const base = pick(PERSONALITY_LAYERS.temperament);
-      const expressions = PERSONALITY_LAYERS.expression.filter(tag => personalitiesCompatible(base,tag));
-      const expression = pick(expressions);
-      const selected = [base,expression];
-      if (Math.random() < .62) {
-        const accents = PERSONALITY_LAYERS.accent.filter(tag => selected.every(other => personalitiesCompatible(other,tag)));
-        if (accents.length) selected.push(pick(accents));
+      const targetCount = Number(chooseFilter("personalityCount", ["1","2","3"]));
+      let selected;
+      if (targetCount === 1) {
+        selected = [pick(PERSONALITY_LAYERS.temperament)];
+      } else if (targetCount === 2) {
+        const base = pick(PERSONALITY_LAYERS.temperament);
+        const expressions = PERSONALITY_LAYERS.expression.filter(tag => personalitiesCompatible(base,tag));
+        selected = [base,pick(expressions)];
+      } else {
+        const compatibleTriples = [];
+        PERSONALITY_LAYERS.temperament.forEach(base => {
+          PERSONALITY_LAYERS.expression.filter(expression => personalitiesCompatible(base,expression)).forEach(expression => {
+            const accents = PERSONALITY_LAYERS.accent.filter(accent => [base,expression].every(other => personalitiesCompatible(other,accent)));
+            accents.forEach(accent => compatibleTriples.push([base,expression,accent]));
+          });
+        });
+        selected = pick(compatibleTriples);
       }
       state.values.personality = selected.map(tag => tag.label).join(" × ");
       state.meta.personality = selected.map(tag => tag.detail).join("；");
@@ -1262,7 +1273,7 @@
     }
 
     function formatText() {
-      const lines = ["# 现代女性人设 v1.3", "", "- 性别：女性", "- 年龄范围：18+成年"];
+      const lines = ["# 现代女性人设 v1.4", "", "- 性别：女性", "- 年龄范围：18+成年"];
       FIELDS.forEach(field => {
         lines.push(`- ${field.label.slice(5)}：${state.values[field.key] || "未生成"}${state.meta[field.key] ? `（${state.meta[field.key]}）` : ""}`);
       });
@@ -1308,7 +1319,7 @@
     function downloadJson() {
       if (!state.values.name) return showToast("请先生成一份人设");
       const payload = {
-        version:"modern-v1.3", gender:"female", adult:true, generatedAt:new Date().toISOString(),
+        version:"modern-v1.4", gender:"female", adult:true, generatedAt:new Date().toISOString(),
         filters:state.filters,
         character:Object.fromEntries(FIELDS.map(field => [field.key,{value:state.values[field.key],detail:state.meta[field.key] || null,colors:state.swatches[field.key] || []}])),
         summary:document.querySelector("#summaryValue").textContent,
@@ -1345,6 +1356,7 @@
         state.rollCount = Number(saved.rollCount) || 0;
         state.filters = {...state.filters,...(saved.filters || {})};
         state.filters.finishingMode = state.filters.finishingMode === "independent" ? "independent" : "linked";
+        state.filters.personalityCount = ["random","1","2","3"].includes(String(state.filters.personalityCount)) ? String(state.filters.personalityCount) : "random";
         normalizeHeightRange();
         updateFinishingLockDependency();
         state.promptPreset = PROMPT_PRESETS[saved.promptPreset] ? saved.promptPreset : "novelai";

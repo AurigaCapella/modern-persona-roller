@@ -94,12 +94,42 @@ const testSource = `${scriptMatch[1].slice(0,cutoff)}
   state.filters.finishingMode = "independent";
   updateFinishingLockDependency();
   if (state.locked.has("outfit") || state.meta.finishingAutoLockedOutfit) throw new Error("独立模式未解除自动锁定依赖");
+
+  const personalityByKey = new Map(Object.values(PERSONALITY_LAYERS).flat().map(tag => [tag.key,tag]));
+  const assertPersonalityCompatible = keys => {
+    for (let i = 0; i < keys.length; i += 1) {
+      for (let j = i + 1; j < keys.length; j += 1) {
+        if (!personalitiesCompatible(personalityByKey.get(keys[i]),personalityByKey.get(keys[j]))) {
+          throw new Error("性格标签产生冲突：" + keys.join(","));
+        }
+      }
+    }
+  };
+  for (const count of [1,2,3]) {
+    state.filters.personalityCount = String(count);
+    for (let i = 0; i < 500; i += 1) {
+      generatePersonality();
+      if (state.meta.personalityKeys.length !== count) throw new Error("固定性格数量未生效：" + count);
+      assertPersonalityCompatible(state.meta.personalityKeys);
+    }
+  }
+  state.filters.personalityCount = "random";
+  const randomPersonalityCounts = {1:0,2:0,3:0};
+  for (let i = 0; i < 6000; i += 1) {
+    generatePersonality();
+    randomPersonalityCounts[state.meta.personalityKeys.length] += 1;
+    assertPersonalityCompatible(state.meta.personalityKeys);
+  }
+  if (Object.values(randomPersonalityCounts).some(count => count < 1500 || count > 2500)) {
+    throw new Error("随机性格数量分布异常：" + JSON.stringify(randomPersonalityCounts));
+  }
   globalThis.promptTestReport = {
     rolls: 400,
     presets: promptTestPresets.length,
     profiles: promptTestProfiles.length,
     finishingEntries: promptTestProfiles.reduce((total,profile) => total + profile.shoes.length + profile.socks.length + profile.accessories.length,0),
-    tallYouthful: heightAbove170
+    tallYouthful: heightAbove170,
+    personalityCounts: randomPersonalityCounts
   };
 `;
 
@@ -108,4 +138,4 @@ const context = {
   console
 };
 vm.runInNewContext(testSource, context, { filename: "index.html" });
-console.log(`Prompt smoke test OK: ${context.promptTestReport.rolls} rolls × ${context.promptTestReport.presets} presets; ${context.promptTestReport.profiles} outfit profiles; ${context.promptTestReport.finishingEntries} finishing entries; ${context.promptTestReport.tallYouthful} youthful rolls above 170 cm`);
+console.log(`Prompt smoke test OK: ${context.promptTestReport.rolls} rolls × ${context.promptTestReport.presets} presets; ${context.promptTestReport.profiles} outfit profiles; ${context.promptTestReport.finishingEntries} finishing entries; ${context.promptTestReport.tallYouthful} youthful rolls above 170 cm; personality distribution ${JSON.stringify(context.promptTestReport.personalityCounts)}`);
