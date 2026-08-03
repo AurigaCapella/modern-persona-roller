@@ -1,0 +1,26 @@
+# Codex / agent-local metadata
+.agents/
+.codex/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local tooling and dependencies
+node_modules/
+dist/
+coverage/
+*.log
+
+# Local secrets must never enter the static site repository
+.env
+.env.*
+!.env.example
+
+# Temporary QA artifacts
+qa-*.png
+*.tmp
+

@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="现代女性人设随机生成器">
+  <title>现代人设 Roll 机 v1.0</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0c11;
+      --panel: rgba(25, 26, 35, .9);
+      --panel-2: #20212b;
+      --text: #f6f2ea;
+      --muted: #aaa9b5;
+      --line: rgba(255, 255, 255, .1);
+      --accent: #ff795b;
+      --gold: #f1c86c;
+      --success: #78d4a7;
+      --shadow: 0 24px 70px rgba(0, 0, 0, .4);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 10%, rgba(255, 121, 91, .16), transparent 32rem),
+        radial-gradient(circle at 90% 18%, rgba(113, 91, 255, .13), transparent 30rem),
+        var(--bg);
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+    button { font: inherit; }
+    .shell { width: min(1160px, calc(100% - 32px)); margin: 0 auto; padding: 58px 0 76px; }
+    header { display: flex; justify-content: space-between; align-items: flex-end; gap: 28px; margin-bottom: 28px; }
+    .eyebrow { margin: 0 0 10px; color: var(--gold); font-size: 12px; font-weight: 900; letter-spacing: .17em; text-transform: uppercase; }
+    h1 { margin: 0; font-family: Georgia, "Songti SC", serif; font-size: clamp(42px, 7vw, 72px); font-weight: 500; letter-spacing: -.055em; line-height: .98; }
+    .subtitle { max-width: 680px; margin: 17px 0 0; color: var(--muted); font-size: 15px; line-height: 1.75; }
+    .version-badge { flex: 0 0 auto; padding: 10px 14px; border: 1px solid rgba(241,200,108,.28); border-radius: 999px; color: var(--gold); background: rgba(241,200,108,.07); font-size: 12px; font-weight: 800; }
+
+    .settings { margin-bottom: 16px; padding: 20px; border: 1px solid var(--line); border-radius: 22px; background: rgba(255,255,255,.035); }
+    .settings-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; }
+    .settings-title { margin: 0; font-size: 14px; }
+    .adult-note { color: var(--muted); font-size: 12px; }
+    .control-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+    .control { min-width: 0; }
+    .control.wide { grid-column: 1 / -1; }
+    .control-label { display: block; margin: 0 0 8px 2px; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+    .segments { display: flex; flex-wrap: wrap; gap: 7px; }
+    .segment { min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); background: rgba(255,255,255,.025); cursor: pointer; }
+    .segment:hover { color: var(--text); border-color: rgba(255,255,255,.22); }
+    .segment[aria-pressed="true"] { color: #21140f; border-color: transparent; background: linear-gradient(135deg, var(--gold), var(--accent)); font-weight: 900; }
+
+    .toolbar { position: sticky; top: 10px; z-index: 10; display: flex; flex-wrap: wrap; gap: 9px; padding: 13px; border: 1px solid var(--line); border-radius: 18px; background: rgba(18,19,25,.88); box-shadow: 0 10px 40px rgba(0,0,0,.25); backdrop-filter: blur(18px); }
+    .button { min-height: 43px; padding: 0 16px; border: 1px solid var(--line); border-radius: 11px; color: var(--text); background: var(--panel-2); cursor: pointer; transition: transform .18s ease, border-color .18s ease; }
+    .button:hover { transform: translateY(-1px); border-color: rgba(255,255,255,.24); }
+    .button:focus-visible, .icon-button:focus-visible, .segment:focus-visible { outline: 3px solid rgba(241,200,108,.32); outline-offset: 2px; }
+    .button.primary { color: #21130e; border-color: transparent; background: linear-gradient(135deg, var(--gold), var(--accent)); font-weight: 900; }
+    .button.ghost { background: transparent; }
+    .spacer { flex: 1; }
+    .counter { display: flex; align-items: center; padding: 0 8px; color: var(--muted); font-size: 12px; }
+    .counter strong { margin-left: 5px; color: var(--text); font-size: 16px; }
+
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin-top: 17px; }
+    .card { position: relative; min-height: 168px; padding: 21px; overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: var(--panel); box-shadow: var(--shadow); transition: border-color .2s ease, transform .2s ease; }
+    .card:hover { border-color: rgba(255,255,255,.2); transform: translateY(-2px); }
+    .card.locked { border-color: rgba(241,200,108,.46); }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .step { color: var(--muted); font-size: 11px; font-weight: 900; letter-spacing: .1em; }
+    .card-actions { display: flex; gap: 6px; }
+    .icon-button { width: 34px; height: 34px; padding: 0; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); background: transparent; cursor: pointer; }
+    .icon-button:hover:not(:disabled) { color: var(--text); background: rgba(255,255,255,.06); }
+    .icon-button:disabled { cursor: not-allowed; opacity: .32; }
+    .icon-button[aria-pressed="true"] { color: var(--gold); background: rgba(241,200,108,.1); }
+    .value { margin: 0; font-family: Georgia, "Songti SC", serif; font-size: clamp(21px, 2.8vw, 29px); line-height: 1.42; }
+    .meta { margin: 10px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .swatches { display: flex; gap: 7px; margin-top: 13px; min-height: 18px; }
+    .swatch { width: 18px; height: 18px; border: 1px solid rgba(255,255,255,.32); border-radius: 50%; box-shadow: 0 0 0 2px rgba(0,0,0,.18); }
+    .summary { grid-column: 1 / -1; min-height: auto; background: linear-gradient(135deg, rgba(255,121,91,.12), rgba(241,200,108,.055)); }
+    .summary .value { font-size: clamp(17px, 2vw, 23px); line-height: 1.75; }
+    .card.flash .value, .card.flash .meta, .card.flash .swatches { animation: reveal .3s ease both; }
+    @keyframes reveal { from { opacity: 0; transform: translateY(7px); filter: blur(2px); } to { opacity: 1; transform: none; filter: none; } }
+    .toast { position: fixed; left: 50%; bottom: 26px; z-index: 30; padding: 11px 16px; border: 1px solid rgba(120,212,167,.35); border-radius: 999px; color: var(--success); background: #171b1b; box-shadow: var(--shadow); opacity: 0; pointer-events: none; transform: translate(-50%, 12px); transition: .2s ease; }
+    .toast.show { opacity: 1; transform: translate(-50%,0); }
+    footer { margin-top: 23px; color: var(--muted); font-size: 12px; text-align: center; line-height: 1.7; }
+
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 20px, 1160px); padding-top: 34px; }
+      header { display: block; }
+      .version-badge { display: inline-block; margin-top: 18px; }
+      .control-grid, .grid { grid-template-columns: 1fr; }
+      .control.wide, .summary { grid-column: auto; }
+      .toolbar { top: 5px; }
+      .button { flex: 1 1 auto; }
+      .spacer { display: none; }
+      .counter { width: 100%; justify-content: center; }
+    }
+    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <p class="eyebrow">Modern Character Generator</p>
+        <h1>现代人设 Roll 机</h1>
+        <p class="subtitle">先选择想控制的方向，再生成一名完整的现代女性角色。发型、配色、身材数据与穿搭会沿着同一套逻辑联动。</p>
+      </div>
+      <span class="version-badge">女性 · 18+ · v1.0</span>
+    </header>
+
+    <section class="settings" aria-labelledby="settingsTitle">
+      <div class="settings-head">
+        <h2 class="settings-title" id="settingsTitle">Roll 前设定</h2>
+        <span class="adult-note">“娇小 / 少女感”仅表示成年人体型与风格</span>
+      </div>
+      <div class="control-grid" id="controls"></div>
+    </section>
+
+    <section class="toolbar" aria-label="生成器操作">
+      <button class="button primary" id="rollAll" type="button">✦ Roll 完整人设</button>
+      <button class="button" id="unlockAll" type="button">全部解锁</button>
+      <span class="spacer"></span>
+      <span class="counter">已生成 <strong id="rollCount">0</strong> 次</span>
+      <button class="button ghost" id="copyText" type="button">复制人设</button>
+      <button class="button ghost" id="downloadJson" type="button">导出 JSON</button>
+    </section>
+
+    <section class="grid" id="cardGrid" aria-label="生成结果"></section>
+    <footer>所有角色默认为成年女性。数据仅保存在当前浏览器；本页无需联网或服务器。</footer>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const STORAGE_KEY = "modern-persona-roller-v1";
+
+    const NAMES = {
+      chinese: {
+        label: "中式",
+        surnames: ["沈", "林", "江", "顾", "许", "闻", "宋", "陆", "叶", "温", "白", "夏", "周", "程", "苏", "黎", "秦", "乔", "谢", "唐", "季", "裴", "楚", "陶"],
+        givens: ["知夏", "见月", "清和", "晚晴", "若蘅", "以宁", "星遥", "予安", "疏桐", "书昀", "嘉树", "微澜", "念初", "昭然", "云舒", "南枝", "望舒", "听澜", "时雨", "映雪", "砚秋", "青禾", "照微", "怀音"]
+      },
+      japanese: {
+        label: "日式",
+        surnames: ["佐藤", "铃木", "高桥", "田中", "渡边", "伊藤", "中村", "小林", "藤原", "星野", "神谷", "水原", "白石", "雨宫", "橘", "九条", "月城", "风间", "朝仓", "黑川", "森川", "樱庭", "一之濑", "望月"],
+        givens: ["凛", "葵", "澪", "灯", "纱月", "七海", "千夏", "结衣", "遥", "美咲", "诗织", "雏乃", "铃音", "真昼", "小春", "雪乃", "奏", "茜", "伊织", "柚叶", "真白", "月乃", "琉璃", "琴音"]
+      },
+      western: {
+        label: "西式",
+        surnames: ["Bennett", "Sinclair", "Moreau", "Foster", "Hart", "Laurent", "Blake", "Morgan", "Hayes", "Reed", "Bellamy", "Clarke", "Bishop", "Sterling", "Vega", "Wells", "Everett", "Rowan", "Monroe", "Ashford", "Beaumont", "Rosier", "Winters", "Valentine"],
+        givens: ["Audrey", "Claire", "Elena", "Iris", "Nora", "Sylvia", "Vivian", "Alice", "Celine", "Diana", "Evelyn", "Flora", "Hazel", "Mira", "Sophie", "Violet", "Aurora", "Bianca", "Celeste", "Luna", "Naomi", "Rosalie", "Serena", "Thea"]
+      }
+    };
+
+    const BODY_TYPES = [
+      { key: "petite", label: "娇小型（成年）", descriptions: ["骨架纤细，重心轻盈", "小骨架，四肢线条利落", "身形小巧，比例匀称", "肩线窄而轻巧，整体玲珑", "个子娇小但体态挺拔"], height: [148,158], bust: [74,84], waist: [55,63], hips: [78,88] },
+      { key: "youthful", label: "少女感（成年）", descriptions: ["线条轻盈，带有运动感", "骨架匀称，轮廓清爽", "身形修长，气质轻快", "纤长舒展，肌肉线条柔和", "比例均衡，带有活力感"], height: [156,168], bust: [78,90], waist: [58,68], hips: [84,95] },
+      { key: "mature", label: "成女型", descriptions: ["曲线舒展，气场成熟", "骨架挺拔，轮廓明晰", "身形丰润而匀称", "肩颈舒展，腰臀曲线明显", "高挑挺拔，存在感鲜明"], height: [160,174], bust: [84,98], waist: [62,76], hips: [88,103] }
+    ];
+
+    const HAIR_LENGTHS = [
+      { key: "pixie", label: "极短发", meta: "耳上至耳际", styles: ["层次精灵短发", "侧分露耳短发", "法式碎短发", "微卷少年感短发", "利落后梳短发", "不对称挑层短发", "猫耳轮廓碎发", "带一撮呆毛的短发", "蓬松刺猬感短发"] },
+      { key: "short", label: "短发", meta: "耳下至下颌", styles: ["齐下颌波波头", "外翘短发", "侧分微卷短发", "挂耳一刀切", "空气感短狼尾", "法式短卷发", "内扣蘑菇头", "短发双丸子", "单侧细辫短发", "齐刘海学生感短发"] },
+      { key: "medium", label: "中长发", meta: "锁骨至胸上", styles: ["锁骨层次发", "中分水波纹", "低位半扎发", "慵懒低马尾", "公主切中长发", "羽毛感狼尾", "侧编发", "水母头", "低双马尾", "侧马尾", "半丸子头", "双麻花辫"] },
+      { key: "long", label: "长发", meta: "胸口至腰际", styles: ["大波浪长卷发", "高马尾", "顺直姬发式", "松散鱼骨辫", "法式低盘发", "双股编发", "层次蝴蝶卷", "高双马尾", "低双马尾", "公主半扎发", "螺旋双钻卷", "长直发配呆毛", "侧边团子发"] },
+      { key: "extra", label: "超长发", meta: "腰际以下", styles: ["瀑布感直长发", "超长低马尾", "宽松侧麻花辫", "古典半盘发", "层叠人鱼卷", "多股细辫长发", "超长姬发式", "双束超长马尾", "环形编发垂落", "发尾大卷公主发"] }
+    ];
+
+    const HAIR_COLORS = [
+      { name: "自然黑", hex: "#171719" }, { name: "墨茶棕", hex: "#352B27" }, { name: "深栗棕", hex: "#4A302A" },
+      { name: "暖榛棕", hex: "#74513B" }, { name: "亚麻棕", hex: "#9A8067" }, { name: "蜂蜜金", hex: "#C89B55" },
+      { name: "冷调铂金", hex: "#D8D4CE" }, { name: "雾灰", hex: "#77777D" }, { name: "酒红", hex: "#6B2532" },
+      { name: "深海蓝", hex: "#243955" }, { name: "灰紫", hex: "#75677F" }, { name: "玫瑰棕", hex: "#8B5C62" },
+      { name: "雪白", hex: "#EEEDE8" }, { name: "月光银", hex: "#BBBCC5" }, { name: "樱花粉", hex: "#DFA4B3" },
+      { name: "蜜桃橙", hex: "#D78663" }, { name: "薄荷绿", hex: "#8FB9A5" }, { name: "翡翠绿", hex: "#356B59" },
+      { name: "冰川蓝", hex: "#8DB5CE" }, { name: "钴蓝", hex: "#31558D" }, { name: "鸢尾紫", hex: "#74558C" },
+      { name: "莓果红", hex: "#923F58" }
+    ];
+
+    const DYE_PAIRS = [
+      { base: {name:"自然黑",hex:"#171719"}, accent:{name:"雾霾蓝",hex:"#71879B"} },
+      { base: {name:"墨茶棕",hex:"#352B27"}, accent:{name:"奶茶金",hex:"#C5AA83"} },
+      { base: {name:"深栗棕",hex:"#4A302A"}, accent:{name:"干枯玫瑰",hex:"#A66E77"} },
+      { base: {name:"雾灰",hex:"#77777D"}, accent:{name:"冷调薰衣草",hex:"#A69CBF"} },
+      { base: {name:"深海蓝",hex:"#243955"}, accent:{name:"孔雀青",hex:"#368B8B"} },
+      { base: {name:"冷调铂金",hex:"#D8D4CE"}, accent:{name:"樱花粉",hex:"#E7A9B4"} },
+      { base: {name:"暖榛棕",hex:"#74513B"}, accent:{name:"焦糖橙",hex:"#C8773E"} },
+      { base: {name:"酒红",hex:"#6B2532"}, accent:{name:"烟粉",hex:"#C18E99"} },
+      { base: {name:"自然黑",hex:"#171719"}, accent:{name:"莓果红",hex:"#B74663"} },
+      { base: {name:"自然黑",hex:"#171719"}, accent:{name:"电光紫",hex:"#8466B2"} },
+      { base: {name:"月光银",hex:"#BBBCC5"}, accent:{name:"冰川蓝",hex:"#8DB5CE"} },
+      { base: {name:"雪白",hex:"#EEEDE8"}, accent:{name:"鸢尾紫",hex:"#74558C"} },
+      { base: {name:"樱花粉",hex:"#DFA4B3"}, accent:{name:"雾霾蓝",hex:"#71879B"} },
+      { base: {name:"薄荷绿",hex:"#8FB9A5"}, accent:{name:"奶油金",hex:"#D5B777"} },
+      { base: {name:"钴蓝",hex:"#31558D"}, accent:{name:"冷调铂金",hex:"#D8D4CE"} },
+      { base: {name:"墨茶棕",hex:"#352B27"}, accent:{name:"翡翠绿",hex:"#4D8A72"} }
+    ];
+    const DYE_METHODS = ["耳圈挑染", "内层染", "发尾渐变", "细束高光挑染", "刘海局部染", "上下双色渐变", "双色分区染", "发际线挑染", "光环染", "隐约羽毛染"];
+
+    const EYE_COLORS = [
+      { name:"深棕",hex:"#4A3328" }, { name:"琥珀",hex:"#A16F2D" }, { name:"蜂蜜金",hex:"#C49745" },
+      { name:"墨绿",hex:"#385545" }, { name:"灰蓝",hex:"#607D94" }, { name:"深海蓝",hex:"#294C6B" },
+      { name:"烟灰",hex:"#777981" }, { name:"紫灰",hex:"#756985" }, { name:"赤茶",hex:"#7A4036" },
+      { name:"玫瑰红",hex:"#A14F68" }, { name:"薄荷绿",hex:"#71A895" }, { name:"翠绿",hex:"#37785A" },
+      { name:"冰蓝",hex:"#79AFCB" }, { name:"宝石蓝",hex:"#315C91" }, { name:"紫罗兰",hex:"#735A9B" },
+      { name:"月白银",hex:"#B8BAC3" }
+    ];
+    const HETERO_EYES = [
+      [{name:"琥珀",hex:"#A16F2D"},{name:"墨绿",hex:"#385545"}],
+      [{name:"灰蓝",hex:"#607D94"},{name:"蜂蜜金",hex:"#C49745"}],
+      [{name:"深棕",hex:"#4A3328"},{name:"灰蓝",hex:"#607D94"}],
+      [{name:"紫灰",hex:"#756985"},{name:"烟灰",hex:"#777981"}],
+      [{name:"赤茶",hex:"#7A4036"},{name:"琥珀",hex:"#A16F2D"}],
+      [{name:"墨绿",hex:"#385545"},{name:"烟灰",hex:"#777981"}],
+      [{name:"玫瑰红",hex:"#A14F68"},{name:"紫罗兰",hex:"#735A9B"}],
+      [{name:"冰蓝",hex:"#79AFCB"},{name:"琥珀",hex:"#A16F2D"}],
+      [{name:"翠绿",hex:"#37785A"},{name:"月白银",hex:"#B8BAC3"}],
+      [{name:"宝石蓝",hex:"#315C91"},{name:"紫灰",hex:"#756985"}],
+      [{name:"薄荷绿",hex:"#71A895"},{name:"蜂蜜金",hex:"#C49745"}]
+    ];
+
+    const SKINS = [
+      { name:"瓷白", meta:"中性底调，通透感明显", hex:"#F2D8CA" },
+      { name:"冷白", meta:"偏粉冷调，肤色明亮", hex:"#EBCDC6" },
+      { name:"暖白", meta:"象牙暖调，气色柔和", hex:"#E7C7AF" },
+      { name:"自然肤色", meta:"中性米调，健康匀净", hex:"#D3A985" },
+      { name:"蜜糖色", meta:"暖金底调，光泽感强", hex:"#B9855F" },
+      { name:"小麦色", meta:"暖棕底调，带日晒感", hex:"#A86F4E" },
+      { name:"深棕肤色", meta:"深暖底调，轮廓鲜明", hex:"#78503F" }
+    ];
+
+    // ACGN 人格采用三层结构：基础气质 + 社交表达 + 可选萌点。
+    // conflicts 同时双向检查，避免热情/寡言、慵懒/完美主义等直接冲突。
+    const PERSONALITY_LAYERS = {
+      temperament: [
+        { key:"genki", label:"元气系", detail:"行动力旺盛，遇事倾向先做再想", conflicts:["reserved","shy","low-key","kuudere","dandere"] },
+        { key:"gentle", label:"温柔治愈", detail:"耐心体贴，擅长照顾他人的情绪", conflicts:["sharp","provocative"] },
+        { key:"cool", label:"冷静自持", detail:"情绪稳定，压力下仍能清晰判断", conflicts:["bubbly","emotional","airhead"] },
+        { key:"strong", label:"强气果断", detail:"主见明确，面对冲突很少退让", conflicts:["timid","dependent","dandere"] },
+        { key:"lazy", label:"慵懒随性", detail:"不爱争抢，但会把精力留给真正重视的事", conflicts:["perfectionist","disciplined","workaholic"] },
+        { key:"serious", label:"认真严谨", detail:"重视规则与承诺，对自己要求很高", conflicts:["carefree","airhead","dojikko"] },
+        { key:"free", label:"自由奔放", detail:"讨厌束缚，喜欢跟随直觉尝试新事物", conflicts:["formal","disciplined","perfectionist"] },
+        { key:"sensitive", label:"细腻敏感", detail:"观察入微，很容易察觉气氛和情绪变化", conflicts:["thick-skinned"] },
+        { key:"cunning", label:"腹黑从容", detail:"表面不动声色，实际上很会布局和拿捏节奏", conflicts:["straightforward","innocent","airhead"] },
+        { key:"tsundere", label:"傲娇", detail:"外在强硬别扭，真正关心时常用行动代替直说", conflicts:["straightforward","bubbly"] },
+        { key:"kuudere", label:"酷娇", detail:"冷静寡言且情绪克制，只在信任的人面前显露柔软", conflicts:["bubbly","outgoing","emotional","genki"] },
+        { key:"dandere", label:"弱气慢热", detail:"不擅主动交际，熟悉以后会逐渐展现亲近的一面", conflicts:["bubbly","outgoing","sharp","strong","genki"] },
+        { key:"devoted", label:"执着深情", detail:"认定目标后极其专一，保护欲与占有欲都偏强", conflicts:["carefree","broad-minded"] }
+      ],
+      expression: [
+        { key:"bubbly", label:"热情健谈", detail:"善于活跃气氛，很容易和陌生人聊起来", conflicts:["reserved","shy","low-key","cool","tsundere","kuudere","dandere"] },
+        { key:"reserved", label:"安静慢热", detail:"话不多，需要时间建立信任", conflicts:["bubbly","outgoing","genki"] },
+        { key:"teasing", label:"爱捉弄人", detail:"习惯用玩笑和轻微恶作剧表达亲近", conflicts:["formal","timid"] },
+        { key:"sharp", label:"毒舌犀利", detail:"观察准确，说话常一针见血", conflicts:["gentle","dandere","empathetic"] },
+        { key:"empathetic", label:"善解人意", detail:"会先倾听，再给出让人安心的回应", conflicts:["sharp","provocative"] },
+        { key:"formal", label:"优雅端庄", detail:"举止克制得体，十分重视礼节与分寸", conflicts:["free","teasing","gyaru"] },
+        { key:"straightforward", label:"坦率直球", detail:"喜欢把好恶和关心清楚说出来", conflicts:["cunning","tsundere","shy"] },
+        { key:"shy", label:"害羞含蓄", detail:"被关注时容易慌张，更擅长用细节表达心意", conflicts:["bubbly","outgoing","straightforward","genki"] },
+        { key:"leader", label:"可靠担当", detail:"遇到麻烦会自然接过责任并照顾全局", conflicts:["dependent","dojikko","airhead"] },
+        { key:"competitive", label:"好胜不服输", detail:"喜欢挑战强者，失败后会暗自加倍努力", conflicts:["carefree"] },
+        { key:"dreamy", label:"电波感", detail:"思路跳跃而独特，常说出旁人意想不到的话", conflicts:["formal","disciplined"] },
+        { key:"outgoing", label:"社交达人", detail:"擅长读懂场面，能快速融入新环境", conflicts:["reserved","shy","kuudere","dandere"] }
+      ],
+      accent: [
+        { key:"dojikko", label:"迷糊冒失", detail:"偶尔笨手笨脚，却会认真补救自己的失误", conflicts:["serious","leader","perfectionist"] },
+        { key:"chuunibyou", label:"中二浪漫", detail:"热衷神秘设定和夸张称号，内心保留英雄幻想", conflicts:["formal"] },
+        { key:"little-devil", label:"小恶魔", detail:"很会察言观色，喜欢看别人被自己逗得慌张", conflicts:["timid","innocent","dandere"] },
+        { key:"ojousama", label:"大小姐气质", detail:"自尊心强，审美讲究，习惯维持从容体面", conflicts:["gyaru","carefree"] },
+        { key:"airhead", label:"天然呆", detail:"思考方式纯粹偶尔脱线，经常无意中制造笑点", conflicts:["cool","cunning","serious","leader","perfectionist"] },
+        { key:"bookish", label:"文学少女系", detail:"爱阅读和独处，表达中常带细腻联想", conflicts:["bubbly"] },
+        { key:"perfectionist", label:"完美主义", detail:"会反复打磨细节，不轻易接受敷衍的完成度", conflicts:["lazy","free","dojikko","airhead"] },
+        { key:"foodie", label:"吃货属性", detail:"谈到喜欢的食物就会明显变得兴奋", conflicts:[] },
+        { key:"justice", label:"正义感过强", detail:"看不得不公平，明知吃亏也会站出来", conflicts:["cunning"] },
+        { key:"gyaru", label:"辣妹系", detail:"时髦开朗、重视友情，表达喜恶十分鲜明", conflicts:["formal","reserved","shy","kuudere","dandere","ojousama"] },
+        { key:"workaholic", label:"努力家", detail:"习惯提早准备，越是重要的事越肯下苦功", conflicts:["lazy","carefree"] },
+        { key:"otaku", label:"专注宅系", detail:"面对兴趣领域知识量惊人，聊到爱好会判若两人", conflicts:[] },
+        { key:"possessive", label:"占有欲强", detail:"对珍视的关系格外敏感，希望获得明确的优先级", conflicts:["carefree","broad-minded"] }
+      ]
+    };
+
+    const OUTFITS = {
+      separates: [
+        { style:"极简通勤", main:"垂感衬衫 + 高腰直筒西裤", colors:[["象牙白","炭灰","#E9E1D2","#3D3E43"],["雾蓝","深藏青","#8CA3B5","#263447"]], shoes:["尖头低跟鞋","简洁乐福鞋"], socks:["裸色隐形袜","深灰薄袜"], accessories:["窄版腕表","几何耳钉","硬挺托特包"] },
+        { style:"清爽学院", main:"针织开衫 + 百褶半裙", colors:[["奶油白","海军蓝","#F1E7D0","#263B59"],["燕麦色","酒红","#C9B89D","#742F3B"]], shoes:["圆头玛丽珍鞋","棕色乐福鞋"], socks:["及膝罗纹袜","白色短袜"], accessories:["细框眼镜","皮质邮差包","小巧发夹"] },
+        { style:"街头休闲", main:"短款夹克 + 工装阔腿裤", colors:[["沙灰","黑色","#A6A39A","#1B1B1E"],["军绿","米白","#596553","#E7DDCA"]], shoes:["厚底运动鞋","高帮帆布鞋"], socks:["撞色运动袜","黑色中筒袜"], accessories:["金属耳圈","斜挎机能包","棒球帽"] },
+        { style:"温柔复古", main:"泡袖上衣 + A 字中长裙", colors:[["雾粉","咖棕","#C99AA0","#65493F"],["鼠尾草绿","奶油色","#879685","#EEE2C8"]], shoes:["复古搭扣鞋","小猫跟鞋"], socks:["蕾丝短袜","米色薄袜"], accessories:["珍珠耳饰","复古方包","细腰带"] },
+        { style:"都市辣妹", main:"修身短上衣 + 高腰微喇裤", colors:[["黑色","玫红","#1B1B1E","#B84B74"],["奶油白","焦糖棕","#EFE4CF","#8B593D"]], shoes:["厚底长靴","尖头踝靴"], socks:["黑色过膝袜","不搭配袜类"], accessories:["大圈耳环","迷你腋下包","叠戴戒指"] },
+        { style:"机能未来", main:"不对称机能背心 + 多口袋束脚裤", colors:[["炭黑","荧光青","#202126","#56C7BB"],["冷灰","电光紫","#777A82","#7658A8"]], shoes:["机能厚底靴","拼色运动鞋"], socks:["压缩长袜","黑色运动袜"], accessories:["战术斜挎包","透明护目镜","金属颈环"] },
+        { style:"甜酷混搭", main:"蝴蝶结短衫 + 皮质百褶裙", colors:[["雾粉","炭黑","#D7A7B4","#242429"],["冰蓝","银灰","#8BB5CF","#A8AAB0"]], shoes:["厚底玛丽珍鞋","系带短靴"], socks:["黑色过膝袜","堆堆袜"], accessories:["心形颈链","铆钉小包","十字发夹"] },
+        { style:"宅系舒适", main:"宽松印花卫衣 + 百慕大短裤", colors:[["奶油黄","牛仔蓝","#E8D59B","#56728C"],["雾紫","深灰","#A89AB5","#44454B"]], shoes:["复古跑鞋","帆布鞋"], socks:["条纹中筒袜","白色运动袜"], accessories:["大框眼镜","帆布痛包","头戴式耳机"] }
+      ],
+      dress: [
+        { style:"法式日常", main:"收腰方领连衣裙", colors:[["深莓红","奶油白","#7C3443","#EEE3CE"],["墨绿","暖金","#2F5547","#C9A25E"]], shoes:["低跟芭蕾鞋","细带凉鞋"], socks:["裸色丝袜","不搭配袜类"], accessories:["锁骨链","藤编手包","小圈耳环"] },
+        { style:"都市简约", main:"剪裁感无袖连衣裙", colors:[["炭黑","银灰","#242428","#A7A9AF"],["鸽灰","雾蓝","#777B83","#93AABB"]], shoes:["尖头短靴","极简高跟鞋"], socks:["黑色薄袜","不搭配袜类"], accessories:["金属腕表","结构感手包","长线耳饰"] },
+        { style:"轻盈度假", main:"吊带长裙 + 薄款罩衫", colors:[["海盐白","天青","#EEE9DC","#6EA9BF"],["杏色","珊瑚橙","#DABF9C","#D8735C"]], shoes:["编织凉鞋","帆布便鞋"], socks:["不搭配袜类","浅色船袜"], accessories:["草编宽檐帽","贝壳项链","帆布托特包"] },
+        { style:"现代哥特", main:"高领黑色连衣裙 + 束腰设计", colors:[["墨黑","酒红","#17171A","#6E2B3A"],["炭灰","冷紫","#3D3E44","#6E5A80"]], shoes:["尖头系带靴","厚底玛丽珍鞋"], socks:["黑色蕾丝长袜","深灰连裤袜"], accessories:["银色十字项链","黑蕾丝手套","硬壳口金包"] },
+        { style:"古典洛丽塔", main:"方领荷叶边连衣裙 + 轻量裙撑", colors:[["奶油白","莓果红","#F0E4CF","#8A3B50"],["雾蓝","深藏青","#9DB2C4","#293950"]], shoes:["圆头搭扣鞋","蝴蝶结低跟鞋"], socks:["蕾丝及膝袜","象牙白裤袜"], accessories:["缎带发箍","浮雕胸针","复古手提包"] },
+        { style:"偶像感日常", main:"短款小礼服式连衣裙 + 轻薄外搭", colors:[["樱花粉","月白银","#DFA4B3","#C5C7CE"],["薄荷绿","奶油金","#8FB9A5","#D5B777"]], shoes:["亮面短靴","细带玛丽珍鞋"], socks:["白色短袜","半透亮丝袜"], accessories:["星形耳坠","丝带腕饰","迷你链条包"] }
+      ],
+      jumpsuit: [
+        { style:"利落工装", main:"束腰工装连体裤", colors:[["橄榄绿","黑色","#60654D","#1D1D20"],["砂岩色","深棕","#B09676","#49372E"]], shoes:["系带短靴","厚底运动鞋"], socks:["黑色中筒袜","深棕短袜"], accessories:["宽版腕表","机能腰包","金属项链"] },
+        { style:"现代优雅", main:"阔腿西装连体裤", colors:[["深藏青","暖白","#25364E","#E7DECF"],["陶土红","香槟金","#9A4F42","#C9AD78"]], shoes:["尖头高跟鞋","方头低跟鞋"], socks:["裸色隐形袜","不搭配袜类"], accessories:["细腰带","信封手包","珍珠耳钉"] },
+        { style:"未来都市", main:"立体剪裁连体衣 + 可拆卸短披肩", colors:[["银灰","冰蓝","#AEB0B8","#79AFCB"],["炭黑","电光紫","#24252A","#7658A8"]], shoes:["流线型厚底靴","金属感踝靴"], socks:["一体式连袜","黑色长袜"], accessories:["单边耳挂","几何腰包","透明腕带"] },
+        { style:"复古牛仔", main:"收腰牛仔连体裤 + 卷边袖口", colors:[["靛蓝","棕色","#36546D","#76513A"],["水洗蓝","莓红","#7696AA","#93445B"]], shoes:["复古板鞋","棕色短靴"], socks:["白色罗纹袜","彩条短袜"], accessories:["印花方巾","圆框墨镜","帆布腰包"] }
+      ],
+      layered: [
+        { style:"都市层叠", main:"修身内搭 + 长款风衣 + 直筒裤", colors:[["卡其","黑色","#AD9374","#1C1C1F"],["冷灰","深蓝","#85878B","#273C58"]], shoes:["皮质短靴","简约乐福鞋"], socks:["深色短袜","黑色薄袜"], accessories:["长柄伞","皮质肩包","极细戒指"] },
+        { style:"柔软叠穿", main:"高领针织衫 + 背心裙 + 短外套", colors:[["燕麦","焦糖","#C6B394","#9B6038"],["雾紫","炭灰","#8D8299","#414047"]], shoes:["圆头短靴","复古运动鞋"], socks:["罗纹中筒袜","深灰连裤袜"], accessories:["羊毛贝雷帽","小型肩背包","银色胸针"] },
+        { style:"地雷系层搭", main:"蕾丝领上衣 + 吊带裙 + 短款针织外套", colors:[["黑色","暗粉","#202024","#A75E73"],["灰紫","黑色","#776B83","#1C1C20"]], shoes:["厚底搭扣鞋","系带长靴"], socks:["黑色过膝袜","蕾丝短袜"], accessories:["缎带颈饰","心形痛包","双侧发带"] },
+        { style:"森系漫游", main:"棉麻衬衫 + 针织背心 + 层叠长裙", colors:[["苔绿","燕麦","#66745E","#C8B99D"],["陶棕","米白","#9B6A4B","#E8DFCE"]], shoes:["圆头皮鞋","系带踝靴"], socks:["粗针堆堆袜","米色长袜"], accessories:["植物胸针","皮革小挎包","软呢帽"] },
+        { style:"原宿混搭", main:"印花衬衫 + 短背心 + 拼接半裙", colors:[["钴蓝","亮橙","#31558D","#D67843"],["薄荷绿","玫红","#8FB9A5","#B84B74"]], shoes:["彩色厚底鞋","拼接高帮鞋"], socks:["左右异色袜","图案中筒袜"], accessories:["多层串珠项链","徽章斜挎包","彩色发夹组"] }
+      ]
+    };
+
+    const FILTERS = [
+      { key:"nameCulture", label:"01 · 姓名体系", wide:true, options:[["random","随机"],["chinese","中式"],["japanese","日式"],["western","西式"]] },
+      { key:"bodyType", label:"02 · 体型", options:[["random","随机"],["petite","娇小（成年）"],["youthful","少女感（成年）"],["mature","成女"]] },
+      { key:"hairMode", label:"03 · 发色模式", options:[["random","随机"],["pure","纯色"],["dyed","染色"]] },
+      { key:"eyeMode", label:"06 · 瞳色模式", options:[["random","随机"],["pure","纯色"],["hetero","异色瞳"]] },
+      { key:"outfitType", label:"09 · 服装结构", wide:true, options:[["random","随机"],["separates","上下装"],["dress","连衣裙"],["jumpsuit","连体装"],["layered","叠穿"]] }
+    ];
+
+    const FIELDS = [
+      { key:"name", label:"01 · 姓名" },
+      { key:"body", label:"02 · 身材" },
+      { key:"hairColor", label:"03 · 发色" },
+      { key:"hairLength", label:"04 · 头发长度" },
+      { key:"hairStyle", label:"05 · 发型" },
+      { key:"eyes", label:"06 · 瞳色" },
+      { key:"measurements", label:"07 · 身体数据" },
+      { key:"skin", label:"08 · 肤色" },
+      { key:"outfit", label:"09 · 衣着" },
+      { key:"finishing", label:"10 · 鞋袜与配饰" },
+      { key:"personality", label:"11 · 性格" }
+    ];
+
+    const state = {
+      values: {}, meta: {}, swatches: {}, locked: new Set(), rollCount: 0,
+      filters: { nameCulture:"random", bodyType:"random", hairMode:"random", eyeMode:"random", outfitType:"random" }
+    };
+
+    const grid = document.querySelector("#cardGrid");
+    const controls = document.querySelector("#controls");
+    const toast = document.querySelector("#toast");
+    const rollCount = document.querySelector("#rollCount");
+    const pick = list => list[Math.floor(Math.random() * list.length)];
+    const pickTwoDistinct = list => {
+      const first = pick(list);
+      const rest = list.filter(item => item !== first);
+      return [first, pick(rest.length ? rest : list)];
+    };
+    const integer = ([min,max]) => Math.floor(Math.random() * (max-min+1)) + min;
+    const chooseFilter = (key, keys) => state.filters[key] === "random" ? pick(keys) : state.filters[key];
+
+    function buildControls() {
+      FILTERS.forEach(filter => {
+        const group = document.createElement("div");
+        group.className = `control${filter.wide ? " wide" : ""}`;
+        const label = document.createElement("span");
+        label.className = "control-label";
+        label.textContent = filter.label;
+        const segments = document.createElement("div");
+        segments.className = "segments";
+        segments.setAttribute("role", "group");
+        segments.setAttribute("aria-label", filter.label);
+        filter.options.forEach(([value,text]) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "segment";
+          button.dataset.filter = filter.key;
+          button.dataset.value = value;
+          button.textContent = text;
+          button.addEventListener("click", () => setFilter(filter.key,value));
+          segments.append(button);
+        });
+        group.append(label,segments);
+        controls.append(group);
+      });
+      updateControls();
+    }
+
+    function setFilter(key,value) {
+      state.filters[key] = value;
+      updateControls();
+      persist();
+    }
+
+    function updateControls() {
+      controls.querySelectorAll(".segment").forEach(button => {
+        button.setAttribute("aria-pressed", String(state.filters[button.dataset.filter] === button.dataset.value));
+      });
+    }
+
+    function buildCards() {
+      FIELDS.forEach(field => {
+        const card = document.createElement("article");
+        card.className = "card";
+        card.dataset.key = field.key;
+        const head = document.createElement("div");
+        head.className = "card-head";
+        const label = document.createElement("span");
+        label.className = "step";
+        label.textContent = field.label;
+        const actions = document.createElement("div");
+        actions.className = "card-actions";
+        const reroll = document.createElement("button");
+        reroll.className = "icon-button reroll";
+        reroll.type = "button";
+        reroll.textContent = "↻";
+        reroll.title = `重抽${field.label.slice(5)}`;
+        reroll.setAttribute("aria-label", reroll.title);
+        reroll.addEventListener("click", () => rerollField(field.key));
+        const lock = document.createElement("button");
+        lock.className = "icon-button lock";
+        lock.type = "button";
+        lock.textContent = "◇";
+        lock.setAttribute("aria-pressed", "false");
+        lock.addEventListener("click", () => toggleLock(field.key));
+        const value = document.createElement("p");
+        value.className = "value";
+        value.textContent = "等待抽取……";
+        const meta = document.createElement("p");
+        meta.className = "meta";
+        meta.hidden = true;
+        const swatches = document.createElement("div");
+        swatches.className = "swatches";
+        actions.append(reroll,lock);
+        head.append(label,actions);
+        card.append(head,value,meta,swatches);
+        grid.append(card);
+      });
+      const summary = document.createElement("article");
+      summary.className = "card summary";
+      const head = document.createElement("div");
+      head.className = "card-head";
+      const label = document.createElement("span");
+      label.className = "step";
+      label.textContent = "现代女性人设 · 汇总";
+      const value = document.createElement("p");
+      value.className = "value";
+      value.id = "summaryValue";
+      value.textContent = "设置偏好后，点击“Roll 完整人设”。";
+      head.append(label);
+      summary.append(head,value);
+      grid.append(summary);
+    }
+
+    function generateName() {
+      const cultureKey = chooseFilter("nameCulture", Object.keys(NAMES));
+      const culture = NAMES[cultureKey];
+      const value = cultureKey === "western" ? `${pick(culture.givens)} ${pick(culture.surnames)}` : `${pick(culture.surnames)}${pick(culture.givens)}`;
+      state.values.name = value;
+      state.meta.name = `${culture.label}姓名 · 成年女性`;
+    }
+
+    function generateBody() {
+      const key = chooseFilter("bodyType", BODY_TYPES.map(item => item.key));
+      const type = BODY_TYPES.find(item => item.key === key);
+      state.values.body = `${type.label} · ${pick(type.descriptions)}`;
+      delete state.meta.body;
+      state.meta.bodyTypeKey = key;
+      state.meta.bodyConfig = type;
+    }
+
+    function generateMeasurements() {
+      let type = BODY_TYPES.find(item => item.key === state.meta.bodyTypeKey);
+      if (!type) {
+        type = pick(BODY_TYPES);
+        state.meta.bodyTypeKey = type.key;
+      }
+      const height = integer(type.height);
+      let bust = integer(type.bust);
+      let waist = integer(type.waist);
+      let hips = integer(type.hips);
+      if (bust <= waist + 14) bust = waist + 15;
+      if (hips <= waist + 18) hips = waist + 19;
+      state.values.measurements = `身高 ${height} cm · B/W/H ${bust}/${waist}/${hips} cm`;
+      state.meta.measurements = `胸围 ${bust} · 腰围 ${waist} · 臀围 ${hips}（相关区间生成）`;
+    }
+
+    function generateHairColor() {
+      const mode = chooseFilter("hairMode", ["pure","dyed"]);
+      if (mode === "pure") {
+        const color = pick(HAIR_COLORS);
+        state.values.hairColor = `${color.name} · ${color.hex}`;
+        state.meta.hairColor = "纯色";
+        state.swatches.hairColor = [color.hex];
+      } else {
+        const pair = pick(DYE_PAIRS);
+        const method = pick(DYE_METHODS);
+        state.values.hairColor = `${method} · ${pair.base.name} + ${pair.accent.name}`;
+        state.meta.hairColor = `${pair.base.hex} → ${pair.accent.hex} · 协调配色组`;
+        state.swatches.hairColor = [pair.base.hex,pair.accent.hex];
+      }
+    }
+
+    function generateHairLength() {
+      const length = pick(HAIR_LENGTHS);
+      state.values.hairLength = length.label;
+      state.meta.hairLength = length.meta;
+      state.meta.hairLengthKey = length.key;
+    }
+
+    function generateHairStyle() {
+      const length = HAIR_LENGTHS.find(item => item.key === state.meta.hairLengthKey) || pick(HAIR_LENGTHS);
+      state.values.hairStyle = pick(length.styles);
+      state.meta.hairStyle = `适配：${length.label}（${length.meta}）`;
+    }
+
+    function generateEyes() {
+      const mode = chooseFilter("eyeMode", ["pure","hetero"]);
+      if (mode === "pure") {
+        const color = pick(EYE_COLORS);
+        state.values.eyes = `${color.name}瞳 · ${color.hex}`;
+        state.meta.eyes = "纯色瞳";
+        state.swatches.eyes = [color.hex];
+      } else {
+        const [left,right] = pick(HETERO_EYES);
+        state.values.eyes = `异色瞳 · 左${left.name} / 右${right.name}`;
+        state.meta.eyes = `${left.hex} + ${right.hex} · 协调异色组`;
+        state.swatches.eyes = [left.hex,right.hex];
+      }
+    }
+
+    function generateSkin() {
+      const skin = pick(SKINS);
+      state.values.skin = skin.name;
+      state.meta.skin = `${skin.meta} · 参考色 ${skin.hex}`;
+      state.swatches.skin = [skin.hex];
+    }
+
+    function generateOutfit() {
+      const typeKey = chooseFilter("outfitType", Object.keys(OUTFITS));
+      const profile = pick(OUTFITS[typeKey]);
+      const colors = pick(profile.colors);
+      const typeLabels = {separates:"上下装",dress:"连衣裙",jumpsuit:"连体装",layered:"叠穿"};
+      state.values.outfit = `${profile.style} · ${profile.main}`;
+      state.meta.outfit = `${typeLabels[typeKey]} · ${colors[0]} + ${colors[1]}`;
+      state.swatches.outfit = [colors[2],colors[3]];
+      state.meta.outfitProfile = profile;
+    }
+
+    function generateFinishing() {
+      let profile = state.meta.outfitProfile;
+      if (!profile) {
+        const typeKey = pick(Object.keys(OUTFITS));
+        profile = pick(OUTFITS[typeKey]);
+        state.meta.outfitProfile = profile;
+      }
+      const [accessoryA,accessoryB] = pickTwoDistinct(profile.accessories);
+      state.values.finishing = `${pick(profile.shoes)} · ${pick(profile.socks)}`;
+      state.meta.finishing = `配饰：${accessoryA} + ${accessoryB}`;
+    }
+
+    function personalitiesCompatible(a,b) {
+      return !a.conflicts.includes(b.key) && !b.conflicts.includes(a.key);
+    }
+
+    function generatePersonality() {
+      const base = pick(PERSONALITY_LAYERS.temperament);
+      const expressions = PERSONALITY_LAYERS.expression.filter(tag => personalitiesCompatible(base,tag));
+      const expression = pick(expressions);
+      const selected = [base,expression];
+      if (Math.random() < .62) {
+        const accents = PERSONALITY_LAYERS.accent.filter(tag => selected.every(other => personalitiesCompatible(other,tag)));
+        if (accents.length) selected.push(pick(accents));
+      }
+      state.values.personality = selected.map(tag => tag.label).join(" × ");
+      state.meta.personality = selected.map(tag => tag.detail).join("；");
+      state.meta.personalityKeys = selected.map(tag => tag.key);
+    }
+
+    const GENERATORS = {
+      name:generateName, body:generateBody, hairColor:generateHairColor, hairLength:generateHairLength,
+      hairStyle:generateHairStyle, eyes:generateEyes, measurements:generateMeasurements,
+      skin:generateSkin, outfit:generateOutfit, finishing:generateFinishing, personality:generatePersonality
+    };
+
+    function rollAllFields() {
+      if (!state.locked.has("name")) generateName();
+      if (!state.locked.has("body")) generateBody();
+      if (!state.locked.has("hairColor")) generateHairColor();
+      if (!state.locked.has("hairLength")) generateHairLength();
+      if (!state.locked.has("hairStyle")) generateHairStyle();
+      if (!state.locked.has("eyes")) generateEyes();
+      if (!state.locked.has("measurements")) generateMeasurements();
+      if (!state.locked.has("skin")) generateSkin();
+      if (!state.locked.has("outfit")) generateOutfit();
+      if (!state.locked.has("finishing")) generateFinishing();
+      if (!state.locked.has("personality")) generatePersonality();
+      state.rollCount += 1;
+      renderAll(true);
+      persist();
+    }
+
+    function rerollField(key) {
+      if (state.locked.has(key)) return;
+      GENERATORS[key]();
+      if (key === "body" && !state.locked.has("measurements")) generateMeasurements();
+      if (key === "hairLength" && !state.locked.has("hairStyle")) generateHairStyle();
+      if (key === "outfit" && !state.locked.has("finishing")) generateFinishing();
+      renderAll(true);
+      persist();
+    }
+
+    function toggleLock(key) {
+      if (state.locked.has(key)) {
+        state.locked.delete(key);
+      } else {
+        state.locked.add(key);
+        if (key === "hairStyle") state.locked.add("hairLength");
+        if (key === "measurements") state.locked.add("body");
+        if (key === "finishing") state.locked.add("outfit");
+      }
+      renderAll(false);
+      persist();
+    }
+
+    function unlockAll() {
+      state.locked.clear();
+      renderAll(false);
+      persist();
+      showToast("已全部解锁");
+    }
+
+    function renderAll(animate=false) {
+      rollCount.textContent = state.rollCount;
+      FIELDS.forEach(field => renderCard(field.key,animate));
+      updateSummary();
+    }
+
+    function renderCard(key,animate) {
+      const card = grid.querySelector(`[data-key="${key}"]`);
+      if (!card) return;
+      card.querySelector(".value").textContent = state.values[key] || "等待抽取……";
+      const meta = card.querySelector(".meta");
+      meta.textContent = state.meta[key] || "";
+      meta.hidden = !state.meta[key];
+      const swatches = card.querySelector(".swatches");
+      swatches.replaceChildren();
+      (state.swatches[key] || []).forEach(hex => {
+        const dot = document.createElement("span");
+        dot.className = "swatch";
+        dot.style.backgroundColor = hex;
+        dot.title = hex;
+        dot.setAttribute("aria-label", `色号 ${hex}`);
+        swatches.append(dot);
+      });
+      const locked = state.locked.has(key);
+      card.classList.toggle("locked",locked);
+      const lock = card.querySelector(".lock");
+      lock.setAttribute("aria-pressed",String(locked));
+      lock.textContent = locked ? "◆" : "◇";
+      lock.title = locked ? "解锁此项" : "锁定此项";
+      card.querySelector(".reroll").disabled = locked;
+      if (animate && state.values[key]) {
+        card.classList.remove("flash");
+        requestAnimationFrame(() => card.classList.add("flash"));
+      }
+    }
+
+    function updateSummary() {
+      const summary = document.querySelector("#summaryValue");
+      if (!state.values.name) {
+        summary.textContent = "设置偏好后，点击“Roll 完整人设”。";
+        return;
+      }
+      summary.textContent = `${state.values.name}，成年女性，${state.values.body}。${state.values.hairLength}，${state.values.hairStyle}，发色为${state.values.hairColor}；${state.values.eyes}，${state.values.skin}。身着${state.values.outfit}，搭配${state.values.finishing}。性格是${state.values.personality}。`;
+    }
+
+    function formatText() {
+      const lines = ["# 现代女性人设 v1.0", "", "- 性别：女性", "- 年龄范围：18+成年"];
+      FIELDS.forEach(field => {
+        lines.push(`- ${field.label.slice(5)}：${state.values[field.key] || "未生成"}${state.meta[field.key] ? `（${state.meta[field.key]}）` : ""}`);
+      });
+      lines.push("", `> ${document.querySelector("#summaryValue").textContent}`);
+      return lines.join("\n");
+    }
+
+    async function copyText() {
+      if (!state.values.name) return showToast("请先生成一份人设");
+      try {
+        await navigator.clipboard.writeText(formatText());
+      } catch {
+        const area = document.createElement("textarea");
+        area.value = formatText();
+        document.body.append(area);
+        area.select();
+        document.execCommand("copy");
+        area.remove();
+      }
+      showToast("人设已复制");
+    }
+
+    function downloadJson() {
+      if (!state.values.name) return showToast("请先生成一份人设");
+      const payload = {
+        version:"modern-v1.0", gender:"female", adult:true, generatedAt:new Date().toISOString(),
+        filters:state.filters,
+        character:Object.fromEntries(FIELDS.map(field => [field.key,{value:state.values[field.key],detail:state.meta[field.key] || null,colors:state.swatches[field.key] || []}])),
+        summary:document.querySelector("#summaryValue").textContent
+      };
+      const blob = new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `modern-character-${Date.now()}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast("JSON 已导出");
+    }
+
+    function persist() {
+      const serializableMeta = {...state.meta};
+      delete serializableMeta.bodyConfig;
+      localStorage.setItem(STORAGE_KEY,JSON.stringify({
+        values:state.values, meta:serializableMeta, swatches:state.swatches,
+        locked:[...state.locked], rollCount:state.rollCount, filters:state.filters
+      }));
+    }
+
+    function restore() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (!saved) return;
+        state.values = saved.values || {};
+        state.meta = saved.meta || {};
+        delete state.meta.body;
+        state.swatches = saved.swatches || {};
+        state.locked = new Set(saved.locked || []);
+        state.rollCount = Number(saved.rollCount) || 0;
+        state.filters = {...state.filters,...(saved.filters || {})};
+        if (state.values.name && !state.values.personality) generatePersonality();
+        persist();
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"),1600);
+    }
+
+    document.querySelector("#rollAll").addEventListener("click",rollAllFields);
+    document.querySelector("#unlockAll").addEventListener("click",unlockAll);
+    document.querySelector("#copyText").addEventListener("click",copyText);
+    document.querySelector("#downloadJson").addEventListener("click",downloadJson);
+
+    buildControls();
+    buildCards();
+    restore();
+    updateControls();
+    renderAll(false);
+  </script>
+</body>
+</html>
