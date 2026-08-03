@@ -4,7 +4,7 @@
 
 ## 当前版本
 
-- 版本：Modern v1.1
+- 版本：Modern v1.2
 - 默认角色：成年女性（18+）
 - 运行方式：纯 HTML / CSS / JavaScript
 - 数据保存：访客自己的浏览器 `localStorage`
@@ -19,6 +19,7 @@
 - 纯色瞳与协调异色瞳
 - 多种现代、ACGN 与日系穿搭档案
 - 鞋、袜、配饰与服装联动
+- 23 套风格档案共 345 个鞋袜配饰池条目
 - 2–3 个无直接冲突的融合性格标签
 - NovelAI、Animagine XL 与通用 Anime 模型提示词格式
 - 自动整理正向、负向提示词，并支持分别或整组复制
@@ -66,6 +67,7 @@ python -m http.server 8080
 - `EYE_COLORS`、`HETERO_EYES`：瞳色
 - `SKINS`：肤色
 - `OUTFITS`：服装、鞋袜和配饰档案
+- `FINISHING_EXPANSIONS`：按风格隔离的鞋袜配饰扩充池
 - `PERSONALITY_LAYERS`：性格标签及冲突关系
 - `PROMPT_PRESETS`、`OUTFIT_PROMPTS`：模型预设与绘图标签映射
 

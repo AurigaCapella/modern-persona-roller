@@ -41,7 +41,17 @@ const testSource = `${scriptMatch[1].slice(0,cutoff)}
   if (Object.values(unmappedFinishing).some(items => items.length)) {
     throw new Error("鞋袜配饰存在未映射项：" + JSON.stringify(unmappedFinishing));
   }
-  globalThis.promptTestReport = { rolls: 400, presets: promptTestPresets.length };
+  for (const profile of promptTestProfiles) {
+    if (profile.shoes.length < 4 || profile.socks.length < 4 || profile.accessories.length < 7) {
+      throw new Error("鞋袜配饰扩充量不足：" + profile.style);
+    }
+  }
+  globalThis.promptTestReport = {
+    rolls: 400,
+    presets: promptTestPresets.length,
+    profiles: promptTestProfiles.length,
+    finishingEntries: promptTestProfiles.reduce((total,profile) => total + profile.shoes.length + profile.socks.length + profile.accessories.length,0)
+  };
 `;
 
 const context = {
@@ -49,4 +59,4 @@ const context = {
   console
 };
 vm.runInNewContext(testSource, context, { filename: "index.html" });
-console.log(`Prompt smoke test OK: ${context.promptTestReport.rolls} rolls × ${context.promptTestReport.presets} presets`);
+console.log(`Prompt smoke test OK: ${context.promptTestReport.rolls} rolls × ${context.promptTestReport.presets} presets; ${context.promptTestReport.profiles} outfit profiles; ${context.promptTestReport.finishingEntries} finishing entries`);

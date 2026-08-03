@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="现代女性人设随机生成器">
-  <title>现代人设 Roll 机 v1.1</title>
+  <title>现代人设 Roll 机 v1.2</title>
   <style>
     :root {
       color-scheme: dark;
@@ -124,7 +124,7 @@
         <h1>现代人设 Roll 机</h1>
         <p class="subtitle">先选择想控制的方向，再生成一名完整的现代女性角色。发型、配色、身材数据与穿搭会沿着同一套逻辑联动。</p>
       </div>
-      <span class="version-badge">女性 · 18+ · v1.1</span>
+      <span class="version-badge">女性 · 18+ · v1.2</span>
     </header>
 
     <section class="settings" aria-labelledby="settingsTitle">
@@ -329,6 +329,134 @@
         { style:"原宿混搭", main:"印花衬衫 + 短背心 + 拼接半裙", colors:[["钴蓝","亮橙","#31558D","#D67843"],["薄荷绿","玫红","#8FB9A5","#B84B74"]], shoes:["彩色厚底鞋","拼接高帮鞋"], socks:["左右异色袜","图案中筒袜"], accessories:["多层串珠项链","徽章斜挎包","彩色发夹组"] }
       ]
     };
+
+    // 参考 ACGN 图像标签体系与现代日系穿搭分类，为每个造型档案补充风格相容的鞋、袜与配饰。
+    // 独立维护扩充表，避免在抽取时把学院、洛丽塔、机能、辣妹等互不相干的元素混在一起。
+    const FINISHING_EXPANSIONS = {
+      "极简通勤": {
+        shoes:["尖头后空平底鞋","方头切尔西短靴"],
+        socks:["烟灰半透短袜","炭灰连裤袜"],
+        accessories:["细金属框眼镜","真丝窄方巾","结构感单肩包","珍珠胸针"]
+      },
+      "清爽学院": {
+        shoes:["厚底乐福鞋","系带牛津鞋"],
+        socks:["藏青及膝袜","菱格纹中筒袜"],
+        accessories:["条纹领结","皮革双肩书包","校徽胸针","格纹发箍"]
+      },
+      "街头休闲": {
+        shoes:["复古老爹鞋","低帮滑板鞋"],
+        socks:["条纹运动长袜","撞色堆堆袜"],
+        accessories:["渔夫帽","粗链项链","露指手套","涂鸦双肩包"]
+      },
+      "温柔复古": {
+        shoes:["丁字带低跟鞋","雕花牛津鞋"],
+        socks:["波点半透短袜","象牙白连裤袜"],
+        accessories:["浮雕宝石胸针","缎带侧发夹","复古皮带腕表","蕾丝短手套"]
+      },
+      "都市辣妹": {
+        shoes:["厚底交叉带凉鞋","尖头骑士长靴"],
+        socks:["细网眼连裤袜","半透过膝袜"],
+        accessories:["窄框墨镜","金属腰链","水钻发夹组","叠层手镯"]
+      },
+      "机能未来": {
+        shoes:["战术机能运动鞋","弹力袜靴"],
+        socks:["几何压缩袜","不对称及膝袜"],
+        accessories:["半透明面罩","机能臂带","链式耳骨夹","反光扣带"]
+      },
+      "甜酷混搭": {
+        shoes:["蝴蝶结厚底鞋","铆钉踝靴"],
+        socks:["条纹过膝袜","蕾丝边连裤袜"],
+        accessories:["双侧蝴蝶结发饰","银色腰链","星月耳骨夹","心形叠戴戒指"]
+      },
+      "宅系舒适": {
+        shoes:["一脚蹬帆布鞋","厚底洞洞鞋"],
+        socks:["角色图案短袜","泡泡堆堆袜"],
+        accessories:["猫耳针织帽","亚克力挂件串","像素发夹组","游戏机斜挎包"]
+      },
+      "法式日常": {
+        shoes:["后空低跟鞋","方头穆勒鞋"],
+        socks:["花边半透短袜","珍珠纹连裤袜"],
+        accessories:["丝质小方巾","法式贝雷帽","珐琅胸针","细链脚链"]
+      },
+      "都市简约": {
+        shoes:["后空尖头高跟鞋","方跟乐福鞋"],
+        socks:["烟黑半透连裤袜","极细罗纹短袜"],
+        accessories:["几何开口手镯","极简耳骨夹","窄版皮腰带","金属发簪"]
+      },
+      "轻盈度假": {
+        shoes:["草编坡跟鞋","细带穆勒凉鞋"],
+        socks:["镂空船袜","彩边短袜"],
+        accessories:["贝壳发夹","细珠脚链","渐变太阳镜","印花头巾"]
+      },
+      "现代哥特": {
+        shoes:["多搭扣骑士靴","蕾丝系带厚底鞋"],
+        socks:["细网眼长袜","黑白条纹过膝袜"],
+        accessories:["蕾丝颈圈","迷你礼帽发饰","多层银戒","金属链腰带"]
+      },
+      "古典洛丽塔": {
+        shoes:["茶会圆头鞋","木底摇摇鞋"],
+        socks:["玫瑰纹连裤袜","荷叶边短袜"],
+        accessories:["荷叶边软帽","蕾丝腕饰","小型阳伞","蝴蝶结项链"]
+      },
+      "偶像感日常": {
+        shoes:["亮片舞台鞋","丝带踝靴"],
+        socks:["星纹及膝袜","荷叶边过膝袜"],
+        accessories:["迷你星冠发饰","双色发带","音符吊坠","应援徽章组"]
+      },
+      "利落工装": {
+        shoes:["系带战术靴","户外越野鞋"],
+        socks:["加厚工装袜","短款护腿套"],
+        accessories:["金属登山扣","露指工作手套","短檐工装帽","身份牌项链"]
+      },
+      "现代优雅": {
+        shoes:["细带后空高跟鞋","尖头穆勒鞋"],
+        socks:["丝光短袜","肤色半透连裤袜"],
+        accessories:["抽象线条胸针","金属细腰封","单颗宝石戒指","几何手镯"]
+      },
+      "未来都市": {
+        shoes:["一体式袜靴","透明底未来运动鞋"],
+        socks:["全息质感长袜","左右不对称腿袜"],
+        accessories:["窄幅电子目镜","发光耳骨夹","全息腰带","透明机能臂环"]
+      },
+      "复古牛仔": {
+        shoes:["尖头牛仔靴","复古高帮帆布鞋"],
+        socks:["西部纹样中筒袜","做旧堆堆袜"],
+        accessories:["宽檐牛仔帽","波洛领绳","皮革宽手环","金属裤链"]
+      },
+      "都市层叠": {
+        shoes:["切尔西短靴","孟克带皮鞋"],
+        socks:["细罗纹中筒袜","暗纹连裤袜"],
+        accessories:["皮革短手套","窄版羊毛围巾","文件式手提包","金属一字发夹"]
+      },
+      "柔软叠穿": {
+        shoes:["绒面莫卡辛鞋","麂皮系带鞋"],
+        socks:["麻花针织长袜","奶油色过膝袜"],
+        accessories:["毛绒耳罩","粗针围巾","玩偶包挂","复古花朵发夹"]
+      },
+      "地雷系层搭": {
+        shoes:["蝴蝶结厚底搭扣鞋","蕾丝系带厚底长靴"],
+        socks:["白色蕾丝及膝袜","吊带式过膝袜"],
+        accessories:["双层蕾丝头饰","心形锁扣颈链","安全别针耳坠","玩偶挂件组"]
+      },
+      "森系漫游": {
+        shoes:["复古牛津鞋","绒面莫卡辛鞋"],
+        socks:["大地色提花袜","粗针护腿袜"],
+        accessories:["干花侧发夹","棉麻蕾丝围巾","怀表项链","树叶耳坠"]
+      },
+      "原宿混搭": {
+        shoes:["彩绘厚底运动鞋","贴布装饰战术靴"],
+        socks:["彩虹护腿袜","棋盘格中筒袜"],
+        accessories:["Decora 彩色发夹组","面颊贴纸组","链式耳骨夹","毛绒钥匙扣串"]
+      }
+    };
+
+    Object.values(OUTFITS).flat().forEach(profile => {
+      const expansion = FINISHING_EXPANSIONS[profile.style];
+      if (!expansion) return;
+      profile.shoes.push(...expansion.shoes);
+      profile.socks.push(...expansion.socks);
+      profile.accessories.push(...expansion.accessories);
+    });
 
     // 绘图提示词使用尽量通用的英文 Danbooru 风格标签，兼容 NovelAI、Animagine 与多数动漫模型。
     const PROMPT_PRESETS = {
@@ -881,11 +1009,15 @@
 
     function footwearPrompt(text) {
       const rules = [
-        ["玛丽珍","mary janes"], ["乐福","loafers"], ["运动鞋","sneakers"], ["跑鞋","sneakers"], ["帆布鞋","canvas shoes"],
+        ["茶会","tea party shoes"], ["摇摇鞋","rocking horse shoes"], ["玛丽珍","mary janes"], ["乐福","loafers"],
+        ["牛津","oxford shoes"], ["莫卡辛","moccasins"], ["穆勒","mules"], ["老爹鞋","dad sneakers"],
+        ["战术靴","combat boots"], ["牛仔靴","cowboy boots"], ["骑士靴","knee boots"], ["袜靴","sock boots"],
+        ["洞洞鞋","clogs"], ["坡跟鞋","wedge sandals"], ["舞台鞋","stage shoes"], ["越野鞋","trail shoes"],
+        ["后空","slingback shoes"], ["运动鞋","sneakers"], ["跑鞋","sneakers"], ["帆布鞋","canvas shoes"],
         ["板鞋","sneakers"], ["高跟","high heels"], ["小猫跟","kitten heels"], ["芭蕾鞋","ballet flats"], ["凉鞋","sandals"],
         ["长靴","knee boots"], ["踝靴","ankle boots"], ["短靴","ankle boots"], ["厚底靴","platform boots"], ["系带靴","lace-up boots"],
         ["低跟鞋","low heels"], ["高帮鞋","high-top shoes"], ["皮鞋","leather shoes"], ["搭扣鞋","buckle shoes"],
-        ["厚底鞋","platform shoes"], ["便鞋","slip-on shoes"]
+        ["厚底鞋","platform shoes"], ["系带鞋","lace-up shoes"], ["便鞋","slip-on shoes"]
       ];
       return (rules.find(([needle]) => text.includes(needle)) || [null,""])[1];
     }
@@ -896,19 +1028,25 @@
         ["连裤袜","pantyhose"], ["丝袜","stockings"], ["长袜","stockings"], ["中筒袜","crew socks"],
         ["堆堆袜","loose socks"], ["短袜","ankle socks"], ["船袜","no-show socks"], ["隐形袜","no-show socks"],
         ["运动袜","sports socks"], ["罗纹袜","ribbed socks"], ["薄袜","sheer socks"], ["裤袜","tights"],
-        ["连袜","stockings"], ["异色袜","mismatched socks"]
+        ["连袜","stockings"], ["异色袜","mismatched socks"], ["压缩袜","compression socks"], ["工装袜","boot socks"],
+        ["护腿","leg warmers"], ["提花袜","patterned socks"], ["腿袜","stockings"]
       ];
       return (rules.find(([needle]) => text.includes(needle)) || [null,""])[1];
     }
 
     function accessoryPrompt(text) {
       const rules = [
-        ["护目镜","goggles"], ["墨镜","sunglasses"], ["眼镜","glasses"], ["耳机","headphones"], ["手套","gloves"],
-        ["发箍","headband"], ["发夹","hairclip"], ["发带","hair ribbon"], ["帽","hat"], ["方巾","neckerchief"],
+        ["电子目镜","visor"], ["护目镜","goggles"], ["太阳镜","sunglasses"], ["墨镜","sunglasses"], ["眼镜","glasses"],
+        ["面罩","face mask"], ["耳机","headphones"], ["耳罩","earmuffs"], ["手套","gloves"], ["登山扣","carabiner"],
+        ["头饰","headdress"], ["星冠","mini tiara"], ["发箍","headband"], ["发夹","hairclip"], ["发簪","hairpin"],
+        ["发带","hair ribbon"], ["发饰","hair ornament"], ["帽","hat"], ["头巾","headscarf"], ["方巾","neckerchief"], ["围巾","scarf"],
+        ["领结","bow tie"], ["领绳","bolo tie"], ["颈圈","choker"], ["吊坠","pendant"], ["脚链","anklet"],
         ["项链","necklace"], ["锁骨链","necklace"], ["颈链","choker"], ["颈饰","choker"], ["颈环","choker"], ["耳环","earrings"],
-        ["耳圈","earrings"],
+        ["耳圈","earrings"], ["耳骨夹","ear cuff"],
         ["耳钉","earrings"], ["耳坠","earrings"], ["耳饰","earrings"], ["耳挂","ear cuff"], ["腕表","wristwatch"],
-        ["腕饰","bracelet"], ["腕带","bracelet"], ["腰带","belt"], ["戒指","rings"], ["胸针","brooch"],
+        ["腕饰","bracelet"], ["腕带","bracelet"], ["手镯","bangle"], ["手环","bracelet"], ["臂带","armband"], ["臂环","armband"],
+        ["腰链","waist chain"], ["裤链","pants chain"], ["腰封","waist belt"], ["腰带","belt"], ["戒","rings"], ["胸针","brooch"],
+        ["徽章","badge"], ["贴纸","face stickers"], ["挂件","charms"], ["钥匙扣","keychains"], ["扣带","straps"],
         ["手包","handbag"], ["托特包","tote bag"], ["挎包","shoulder bag"], ["肩包","shoulder bag"], ["方包","handbag"],
         ["痛包","ita bag"], ["小包","small bag"], ["腰包","waist bag"], ["邮差包","messenger bag"], ["包","bag"], ["伞","umbrella"]
       ];
@@ -1009,7 +1147,7 @@
     }
 
     function formatText() {
-      const lines = ["# 现代女性人设 v1.1", "", "- 性别：女性", "- 年龄范围：18+成年"];
+      const lines = ["# 现代女性人设 v1.2", "", "- 性别：女性", "- 年龄范围：18+成年"];
       FIELDS.forEach(field => {
         lines.push(`- ${field.label.slice(5)}：${state.values[field.key] || "未生成"}${state.meta[field.key] ? `（${state.meta[field.key]}）` : ""}`);
       });
@@ -1055,7 +1193,7 @@
     function downloadJson() {
       if (!state.values.name) return showToast("请先生成一份人设");
       const payload = {
-        version:"modern-v1.1", gender:"female", adult:true, generatedAt:new Date().toISOString(),
+        version:"modern-v1.2", gender:"female", adult:true, generatedAt:new Date().toISOString(),
         filters:state.filters,
         character:Object.fromEntries(FIELDS.map(field => [field.key,{value:state.values[field.key],detail:state.meta[field.key] || null,colors:state.swatches[field.key] || []}])),
         summary:document.querySelector("#summaryValue").textContent,
