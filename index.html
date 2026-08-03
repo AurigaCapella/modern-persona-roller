@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="现代女性人设随机生成器">
-  <title>现代人设 Roll 机 v1.0</title>
+  <title>现代人设 Roll 机 v1.1</title>
   <style>
     :root {
       color-scheme: dark;
@@ -80,6 +80,19 @@
     .swatch { width: 18px; height: 18px; border: 1px solid rgba(255,255,255,.32); border-radius: 50%; box-shadow: 0 0 0 2px rgba(0,0,0,.18); }
     .summary { grid-column: 1 / -1; min-height: auto; background: linear-gradient(135deg, rgba(255,121,91,.12), rgba(241,200,108,.055)); }
     .summary .value { font-size: clamp(17px, 2vw, 23px); line-height: 1.75; }
+    .prompt-card { grid-column: 1 / -1; min-height: auto; }
+    .prompt-head { align-items: flex-start; }
+    .prompt-title { display: grid; gap: 6px; }
+    .prompt-note { color: var(--muted); font-size: 12px; font-weight: 400; letter-spacing: 0; line-height: 1.55; }
+    .prompt-select { min-height: 38px; padding: 0 34px 0 11px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: var(--panel-2); font: inherit; cursor: pointer; }
+    .prompt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+    .prompt-block { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.16); }
+    .prompt-block-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
+    .prompt-block-title { color: var(--gold); font-size: 11px; font-weight: 900; letter-spacing: .08em; }
+    .prompt-copy { min-height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: transparent; cursor: pointer; }
+    .prompt-copy:hover { color: var(--text); border-color: rgba(255,255,255,.24); }
+    .prompt-output { width: 100%; min-height: 190px; padding: 0; resize: vertical; border: 0; outline: 0; color: #e9e5dc; background: transparent; font: 12px/1.7 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .prompt-footer { display: flex; justify-content: flex-end; margin-top: 12px; }
     .card.flash .value, .card.flash .meta, .card.flash .swatches { animation: reveal .3s ease both; }
     @keyframes reveal { from { opacity: 0; transform: translateY(7px); filter: blur(2px); } to { opacity: 1; transform: none; filter: none; } }
     .toast { position: fixed; left: 50%; bottom: 26px; z-index: 30; padding: 11px 16px; border: 1px solid rgba(120,212,167,.35); border-radius: 999px; color: var(--success); background: #171b1b; box-shadow: var(--shadow); opacity: 0; pointer-events: none; transform: translate(-50%, 12px); transition: .2s ease; }
@@ -91,7 +104,10 @@
       header { display: block; }
       .version-badge { display: inline-block; margin-top: 18px; }
       .control-grid, .grid { grid-template-columns: 1fr; }
-      .control.wide, .summary { grid-column: auto; }
+      .control.wide, .summary, .prompt-card { grid-column: auto; }
+      .prompt-grid { grid-template-columns: 1fr; }
+      .prompt-head { display: grid; }
+      .prompt-select { width: 100%; }
       .toolbar { top: 5px; }
       .button { flex: 1 1 auto; }
       .spacer { display: none; }
@@ -108,7 +124,7 @@
         <h1>现代人设 Roll 机</h1>
         <p class="subtitle">先选择想控制的方向，再生成一名完整的现代女性角色。发型、配色、身材数据与穿搭会沿着同一套逻辑联动。</p>
       </div>
-      <span class="version-badge">女性 · 18+ · v1.0</span>
+      <span class="version-badge">女性 · 18+ · v1.1</span>
     </header>
 
     <section class="settings" aria-labelledby="settingsTitle">
@@ -314,6 +330,84 @@
       ]
     };
 
+    // 绘图提示词使用尽量通用的英文 Danbooru 风格标签，兼容 NovelAI、Animagine 与多数动漫模型。
+    const PROMPT_PRESETS = {
+      novelai: {
+        label: "NovelAI",
+        prefix: ["masterpiece", "best quality", "very aesthetic", "absurdres"],
+        suffix: ["detailed eyes", "detailed hair", "modern fashion", "clean background"],
+        negative: ["lowres", "worst quality", "bad quality", "blurry", "jpeg artifacts", "bad anatomy", "bad hands", "malformed hands", "extra fingers", "missing fingers", "extra limbs", "deformed", "cross-eyed", "text", "signature", "watermark", "logo"]
+      },
+      animagine: {
+        label: "Animagine XL",
+        prefix: ["masterpiece", "best quality", "very aesthetic", "absurdres", "newest"],
+        suffix: ["detailed eyes", "detailed hair", "anime coloring", "clean lineart"],
+        negative: ["lowres", "worst quality", "low quality", "bad anatomy", "bad hands", "multiple views", "abstract", "signature", "watermark", "username", "text", "logo"]
+      },
+      anime: {
+        label: "通用 Anime 模型",
+        prefix: ["high quality anime illustration", "detailed character design"],
+        suffix: ["detailed face", "detailed clothing", "soft studio lighting", "simple background"],
+        negative: ["low quality", "low resolution", "blurry", "bad anatomy", "bad hands", "extra fingers", "missing fingers", "extra limbs", "deformed body", "poorly drawn face", "text", "watermark", "logo"]
+      }
+    };
+
+    const COLOR_PROMPTS = {
+      "自然黑":"black", "墨茶棕":"dark brown", "深栗棕":"chestnut brown", "暖榛棕":"hazel brown", "亚麻棕":"ash brown",
+      "蜂蜜金":"honey blonde", "冷调铂金":"platinum blonde", "雾灰":"grey", "酒红":"burgundy", "深海蓝":"dark blue",
+      "灰紫":"grey purple", "玫瑰棕":"rose brown", "雪白":"white", "月光银":"silver", "樱花粉":"pink",
+      "蜜桃橙":"peach orange", "薄荷绿":"mint green", "翡翠绿":"emerald green", "冰川蓝":"light blue", "钴蓝":"cobalt blue",
+      "鸢尾紫":"violet", "莓果红":"berry red", "雾霾蓝":"dusty blue", "奶茶金":"beige blonde", "干枯玫瑰":"dusty rose",
+      "冷调薰衣草":"lavender", "孔雀青":"teal", "焦糖橙":"caramel orange", "烟粉":"dusty pink", "电光紫":"electric purple",
+      "奶油金":"cream blonde", "深棕":"dark brown", "琥珀":"amber", "墨绿":"dark green", "灰蓝":"grey blue",
+      "烟灰":"grey", "紫灰":"grey purple", "赤茶":"reddish brown", "玫瑰红":"rose red", "翠绿":"green",
+      "冰蓝":"light blue", "宝石蓝":"blue", "紫罗兰":"violet", "月白银":"silver"
+    };
+
+    const DYE_PROMPTS = {
+      "耳圈挑染":"earloop highlights", "内层染":"colored inner hair", "发尾渐变":"gradient hair tips", "细束高光挑染":"fine hair highlights",
+      "刘海局部染":"colored bangs", "上下双色渐变":"two-tone gradient hair", "双色分区染":"split-color hair", "发际线挑染":"hairline highlights",
+      "光环染":"halo hair coloring", "隐约羽毛染":"subtle feathered highlights"
+    };
+
+    const OUTFIT_PROMPTS = {
+      "垂感衬衫 + 高腰直筒西裤":["dress shirt", "high-waist pants"],
+      "针织开衫 + 百褶半裙":["cardigan", "pleated skirt"],
+      "短款夹克 + 工装阔腿裤":["cropped jacket", "wide cargo pants"],
+      "泡袖上衣 + A 字中长裙":["puff-sleeve blouse", "a-line midi skirt"],
+      "修身短上衣 + 高腰微喇裤":["fitted crop top", "high-waist flared pants"],
+      "不对称机能背心 + 多口袋束脚裤":["asymmetrical techwear vest", "pocketed jogger pants"],
+      "蝴蝶结短衫 + 皮质百褶裙":["bow crop top", "leather pleated skirt"],
+      "宽松印花卫衣 + 百慕大短裤":["oversized print sweatshirt", "bermuda shorts"],
+      "收腰方领连衣裙":["square-neck dress", "fitted waist"],
+      "剪裁感无袖连衣裙":["sleeveless tailored dress"],
+      "吊带长裙 + 薄款罩衫":["long camisole dress", "lightweight cardigan"],
+      "高领黑色连衣裙 + 束腰设计":["black high-neck dress", "corset waist"],
+      "方领荷叶边连衣裙 + 轻量裙撑":["square-neck frilled dress", "lolita fashion", "petticoat"],
+      "短款小礼服式连衣裙 + 轻薄外搭":["short idol dress", "lightweight outerwear"],
+      "束腰工装连体裤":["belted utility jumpsuit"],
+      "阔腿西装连体裤":["wide-leg tailored jumpsuit"],
+      "立体剪裁连体衣 + 可拆卸短披肩":["futuristic fitted jumpsuit", "short capelet"],
+      "收腰牛仔连体裤 + 卷边袖口":["denim jumpsuit", "rolled sleeves"],
+      "修身内搭 + 长款风衣 + 直筒裤":["fitted top", "long trench coat", "straight pants"],
+      "高领针织衫 + 背心裙 + 短外套":["turtleneck sweater", "pinafore dress", "short jacket"],
+      "蕾丝领上衣 + 吊带裙 + 短款针织外套":["lace-collar blouse", "camisole dress", "cropped cardigan", "jirai kei"],
+      "棉麻衬衫 + 针织背心 + 层叠长裙":["linen shirt", "knit vest", "layered long skirt"],
+      "印花衬衫 + 短背心 + 拼接半裙":["printed shirt", "cropped vest", "patchwork skirt", "harajuku fashion"]
+    };
+
+    const PERSONALITY_PROMPTS = {
+      genki:["bright smile", "energetic pose"], gentle:["gentle smile"], cool:["calm expression"], strong:["confident pose"],
+      lazy:["relaxed pose"], serious:["composed expression"], free:["carefree expression"], sensitive:["soft expression"],
+      cunning:["knowing smile"], tsundere:["slight blush", "looking away"], kuudere:["cool expression"], dandere:["shy", "blush"], devoted:["determined eyes"],
+      bubbly:["open smile"], reserved:["reserved expression"], teasing:["playful smile"], sharp:["sharp eyes"], empathetic:["kind eyes"],
+      formal:["elegant posture"], straightforward:["direct gaze"], shy:["shy smile"], leader:["confident stance"], competitive:["determined expression"],
+      dreamy:["distant gaze"], outgoing:["friendly smile"], dojikko:["flustered expression"], chuunibyou:["dramatic pose"],
+      "little-devil":["mischievous smile"], ojousama:["ojou-sama pose"], airhead:["innocent smile"], bookish:["bookish"],
+      perfectionist:["neat appearance"], foodie:["happy expression"], justice:["determined pose"], gyaru:["gyaru", "confident smile"],
+      workaholic:["focused expression"], otaku:["enthusiastic expression"], possessive:["intense gaze"]
+    };
+
     const FILTERS = [
       { key:"nameCulture", label:"01 · 姓名体系", wide:true, options:[["random","随机"],["chinese","中式"],["japanese","日式"],["western","西式"]] },
       { key:"bodyType", label:"02 · 体型", options:[["random","随机"],["petite","娇小（成年）"],["youthful","少女感（成年）"],["mature","成女"]] },
@@ -338,7 +432,8 @@
 
     const state = {
       values: {}, meta: {}, swatches: {}, locked: new Set(), rollCount: 0,
-      filters: { nameCulture:"random", bodyType:"random", hairMode:"random", eyeMode:"random", outfitType:"random" }
+      filters: { nameCulture:"random", bodyType:"random", hairMode:"random", eyeMode:"random", outfitType:"random" },
+      promptPreset: "novelai"
     };
 
     const grid = document.querySelector("#cardGrid");
@@ -445,6 +540,71 @@
       head.append(label);
       summary.append(head,value);
       grid.append(summary);
+
+      const promptCard = document.createElement("article");
+      promptCard.className = "card prompt-card";
+      const promptHead = document.createElement("div");
+      promptHead.className = "card-head prompt-head";
+      const promptTitle = document.createElement("div");
+      promptTitle.className = "prompt-title";
+      const promptLabel = document.createElement("span");
+      promptLabel.className = "step";
+      promptLabel.textContent = "绘图提示词 · IMAGE PROMPT";
+      const promptNote = document.createElement("span");
+      promptNote.className = "prompt-note";
+      promptNote.textContent = "英文逗号标签，可直接粘贴到对应模型；只在本地生成，不会调用绘图 API。";
+      promptTitle.append(promptLabel,promptNote);
+      const preset = document.createElement("select");
+      preset.className = "prompt-select";
+      preset.id = "promptPreset";
+      preset.setAttribute("aria-label", "提示词模型格式");
+      Object.entries(PROMPT_PRESETS).forEach(([key,config]) => {
+        const option = document.createElement("option");
+        option.value = key;
+        option.textContent = config.label;
+        preset.append(option);
+      });
+      preset.addEventListener("change", () => {
+        state.promptPreset = preset.value;
+        renderPrompt();
+        persist();
+      });
+      promptHead.append(promptTitle,preset);
+
+      const promptGrid = document.createElement("div");
+      promptGrid.className = "prompt-grid";
+      [["positive","正向提示词"],["negative","负向提示词"]].forEach(([kind,title]) => {
+        const block = document.createElement("section");
+        block.className = "prompt-block";
+        const blockHead = document.createElement("div");
+        blockHead.className = "prompt-block-head";
+        const blockTitle = document.createElement("span");
+        blockTitle.className = "prompt-block-title";
+        blockTitle.textContent = title;
+        const copy = document.createElement("button");
+        copy.className = "prompt-copy";
+        copy.type = "button";
+        copy.textContent = "复制";
+        copy.addEventListener("click", () => copyPrompt(kind));
+        const output = document.createElement("textarea");
+        output.className = "prompt-output";
+        output.id = `${kind}Prompt`;
+        output.readOnly = true;
+        output.setAttribute("aria-label", title);
+        blockHead.append(blockTitle,copy);
+        block.append(blockHead,output);
+        promptGrid.append(block);
+      });
+      const promptFooter = document.createElement("div");
+      promptFooter.className = "prompt-footer";
+      const copyAll = document.createElement("button");
+      copyAll.className = "button ghost";
+      copyAll.type = "button";
+      copyAll.textContent = "复制正向 + 负向";
+      copyAll.addEventListener("click", () => copyPrompt("all"));
+      promptFooter.append(copyAll);
+      promptCard.append(promptHead,promptGrid,promptFooter);
+      grid.append(promptCard);
     }
 
     function generateName() {
@@ -661,46 +821,245 @@
       }
     }
 
+    function uniqueTags(tags) {
+      return [...new Set(tags.filter(Boolean).map(tag => tag.trim()).filter(Boolean))];
+    }
+
+    function basicColorFromHex(hex) {
+      const value = String(hex || "").replace("#", "");
+      if (!/^[0-9a-f]{6}$/i.test(value)) return "";
+      const [r,g,b] = [0,2,4].map(offset => parseInt(value.slice(offset,offset + 2),16) / 255);
+      const max = Math.max(r,g,b);
+      const min = Math.min(r,g,b);
+      const delta = max - min;
+      const lightness = (max + min) / 2;
+      if (delta < .09) return lightness > .82 ? "white" : lightness < .2 ? "black" : "grey";
+      let hue;
+      if (max === r) hue = ((g - b) / delta) % 6;
+      else if (max === g) hue = (b - r) / delta + 2;
+      else hue = (r - g) / delta + 4;
+      hue = (hue * 60 + 360) % 360;
+      if (lightness < .38 && (hue < 45 || hue > 345)) return "brown";
+      if (hue < 15 || hue >= 345) return lightness > .68 ? "pink" : "red";
+      if (hue < 45) return "orange";
+      if (hue < 70) return "yellow";
+      if (hue < 165) return "green";
+      if (hue < 195) return "teal";
+      if (hue < 255) return "blue";
+      if (hue < 290) return "purple";
+      return lightness > .62 ? "pink" : "purple";
+    }
+
+    function hairStylePromptTags(style) {
+      const tags = [];
+      if (style.includes("水母头")) tags.push("jellyfish cut");
+      else if (style.includes("姬发式")) tags.push("hime cut");
+      else if (style.includes("狼尾")) tags.push("wolf cut");
+      else if (style.includes("波波头")) tags.push("bob cut");
+      else if (style.includes("蘑菇头")) tags.push("bowl cut");
+      if (style.includes("双马尾")) tags.push("twintails");
+      else if (style.includes("侧马尾")) tags.push("side ponytail");
+      else if (style.includes("马尾")) tags.push("ponytail");
+      if (style.includes("双丸子") || style.includes("双团子")) tags.push("double buns");
+      else if (style.includes("丸子") || style.includes("团子")) tags.push("hair bun");
+      if (style.includes("双麻花辫") || style.includes("双股编发")) tags.push("twin braids");
+      else if (style.includes("辫") || style.includes("编发")) tags.push("braid");
+      if (style.includes("盘发")) tags.push("hair updo");
+      if (style.includes("半扎")) tags.push("half updo");
+      if (style.includes("大波浪") || style.includes("水波纹") || style.includes("人鱼卷") || style.includes("蝴蝶卷")) tags.push("wavy hair");
+      else if (style.includes("卷")) tags.push("curly hair");
+      if (style.includes("直发") || style.includes("一刀切") || style.includes("顺直")) tags.push("straight hair");
+      if (style.includes("齐刘海")) tags.push("blunt bangs");
+      if (style.includes("侧分")) tags.push("side-parted hair");
+      if (style.includes("中分")) tags.push("center-parted hair");
+      if (style.includes("露耳") || style.includes("挂耳")) tags.push("hair behind ear");
+      if (style.includes("外翘")) tags.push("flipped hair");
+      if (style.includes("呆毛")) tags.push("ahoge");
+      if (style.includes("不对称")) tags.push("asymmetrical hair");
+      return uniqueTags(tags.length ? tags : ["styled hair"]);
+    }
+
+    function footwearPrompt(text) {
+      const rules = [
+        ["玛丽珍","mary janes"], ["乐福","loafers"], ["运动鞋","sneakers"], ["跑鞋","sneakers"], ["帆布鞋","canvas shoes"],
+        ["板鞋","sneakers"], ["高跟","high heels"], ["小猫跟","kitten heels"], ["芭蕾鞋","ballet flats"], ["凉鞋","sandals"],
+        ["长靴","knee boots"], ["踝靴","ankle boots"], ["短靴","ankle boots"], ["厚底靴","platform boots"], ["系带靴","lace-up boots"],
+        ["低跟鞋","low heels"], ["高帮鞋","high-top shoes"], ["皮鞋","leather shoes"], ["搭扣鞋","buckle shoes"],
+        ["厚底鞋","platform shoes"], ["便鞋","slip-on shoes"]
+      ];
+      return (rules.find(([needle]) => text.includes(needle)) || [null,""])[1];
+    }
+
+    function socksPrompt(text) {
+      const rules = [
+        ["不搭配袜类","bare legs"], ["过膝袜","thighhighs"], ["及膝袜","knee socks"], ["及膝罗纹袜","knee socks"],
+        ["连裤袜","pantyhose"], ["丝袜","stockings"], ["长袜","stockings"], ["中筒袜","crew socks"],
+        ["堆堆袜","loose socks"], ["短袜","ankle socks"], ["船袜","no-show socks"], ["隐形袜","no-show socks"],
+        ["运动袜","sports socks"], ["罗纹袜","ribbed socks"], ["薄袜","sheer socks"], ["裤袜","tights"],
+        ["连袜","stockings"], ["异色袜","mismatched socks"]
+      ];
+      return (rules.find(([needle]) => text.includes(needle)) || [null,""])[1];
+    }
+
+    function accessoryPrompt(text) {
+      const rules = [
+        ["护目镜","goggles"], ["墨镜","sunglasses"], ["眼镜","glasses"], ["耳机","headphones"], ["手套","gloves"],
+        ["发箍","headband"], ["发夹","hairclip"], ["发带","hair ribbon"], ["帽","hat"], ["方巾","neckerchief"],
+        ["项链","necklace"], ["锁骨链","necklace"], ["颈链","choker"], ["颈饰","choker"], ["颈环","choker"], ["耳环","earrings"],
+        ["耳圈","earrings"],
+        ["耳钉","earrings"], ["耳坠","earrings"], ["耳饰","earrings"], ["耳挂","ear cuff"], ["腕表","wristwatch"],
+        ["腕饰","bracelet"], ["腕带","bracelet"], ["腰带","belt"], ["戒指","rings"], ["胸针","brooch"],
+        ["手包","handbag"], ["托特包","tote bag"], ["挎包","shoulder bag"], ["肩包","shoulder bag"], ["方包","handbag"],
+        ["痛包","ita bag"], ["小包","small bag"], ["腰包","waist bag"], ["邮差包","messenger bag"], ["包","bag"], ["伞","umbrella"]
+      ];
+      return (rules.find(([needle]) => text.includes(needle)) || [null,""])[1];
+    }
+
+    function buildCharacterPromptTags() {
+      const tags = ["1girl", "solo", "adult woman", "full body", "standing", "looking at viewer", "fully clothed"];
+      const bodyKey = state.meta.bodyTypeKey;
+      const bodyTags = { petite:["petite", "slim"], youthful:["slender"], mature:["mature female", "curvy"] };
+      tags.push(...(bodyTags[bodyKey] || []));
+
+      const heightMatch = String(state.values.measurements || "").match(/身高\s*(\d+)/);
+      if (heightMatch && Number(heightMatch[1]) >= 169) tags.push("tall female");
+
+      const lengthTags = { pixie:"very short hair", short:"short hair", medium:"medium hair", long:"long hair", extra:"very long hair" };
+      tags.push(lengthTags[state.meta.hairLengthKey]);
+      tags.push(...hairStylePromptTags(state.values.hairStyle || ""));
+
+      const hairParts = String(state.values.hairColor || "").split(" · ");
+      if (state.meta.hairColor === "纯色") {
+        const color = COLOR_PROMPTS[hairParts[0]];
+        if (color) tags.push(`${color} hair`);
+      } else if (hairParts.length > 1) {
+        const [base,accent] = hairParts[1].split(" + ");
+        if (COLOR_PROMPTS[base]) tags.push(`${COLOR_PROMPTS[base]} hair`);
+        if (COLOR_PROMPTS[accent]) tags.push(`${COLOR_PROMPTS[accent]} highlights`);
+        tags.push(DYE_PROMPTS[hairParts[0]]);
+      }
+
+      const eyeValue = String(state.values.eyes || "");
+      if (eyeValue.startsWith("异色瞳")) {
+        tags.push("heterochromia");
+        const match = eyeValue.match(/左(.+?)\s*\/\s*右(.+)$/);
+        if (match) {
+          if (COLOR_PROMPTS[match[1]]) tags.push(`${COLOR_PROMPTS[match[1]]} left eye`);
+          if (COLOR_PROMPTS[match[2]]) tags.push(`${COLOR_PROMPTS[match[2]]} right eye`);
+        }
+      } else {
+        const eyeName = eyeValue.split("瞳")[0];
+        if (COLOR_PROMPTS[eyeName]) tags.push(`${COLOR_PROMPTS[eyeName]} eyes`);
+      }
+
+      const skinTags = { "瓷白":"pale skin", "冷白":"fair skin", "暖白":"fair skin", "自然肤色":"light tan skin", "蜜糖色":"tan skin", "小麦色":"tan skin", "深棕肤色":"dark skin" };
+      tags.push(skinTags[state.values.skin]);
+
+      const outfitMain = String(state.values.outfit || "").split(" · ").slice(1).join(" · ");
+      tags.push(...(OUTFIT_PROMPTS[outfitMain] || ["modern clothes"]));
+      const outfitColors = uniqueTags((state.swatches.outfit || []).map(basicColorFromHex));
+      if (outfitColors.length) tags.push(`${outfitColors.join(" and ")} color scheme`);
+
+      const [shoes,socks] = String(state.values.finishing || "").split(" · ");
+      tags.push(footwearPrompt(shoes || ""), socksPrompt(socks || ""));
+      const accessories = String(state.meta.finishing || "").replace(/^配饰：/, "").split(" + ");
+      tags.push(...accessories.map(accessoryPrompt));
+      (state.meta.personalityKeys || []).forEach(key => tags.push(...(PERSONALITY_PROMPTS[key] || [])));
+      return uniqueTags(tags);
+    }
+
+    function buildImagePrompts() {
+      const preset = PROMPT_PRESETS[state.promptPreset] || PROMPT_PRESETS.novelai;
+      const characterTags = buildCharacterPromptTags();
+      const positiveTags = state.promptPreset === "animagine"
+        ? [...characterTags, ...preset.suffix, ...preset.prefix]
+        : [...preset.prefix, ...characterTags, ...preset.suffix];
+      return {
+        preset: preset.label,
+        positive: uniqueTags(positiveTags).join(", "),
+        negative: uniqueTags(preset.negative).join(", ")
+      };
+    }
+
+    function renderPrompt() {
+      const preset = document.querySelector("#promptPreset");
+      const positive = document.querySelector("#positivePrompt");
+      const negative = document.querySelector("#negativePrompt");
+      if (!preset || !positive || !negative) return;
+      preset.value = PROMPT_PRESETS[state.promptPreset] ? state.promptPreset : "novelai";
+      if (!state.values.name) {
+        positive.value = "生成一份人设后，这里会自动整理正向提示词。";
+        negative.value = "生成一份人设后，这里会自动整理负向提示词。";
+        return;
+      }
+      const prompts = buildImagePrompts();
+      positive.value = prompts.positive;
+      negative.value = prompts.negative;
+    }
+
     function updateSummary() {
       const summary = document.querySelector("#summaryValue");
       if (!state.values.name) {
         summary.textContent = "设置偏好后，点击“Roll 完整人设”。";
+        renderPrompt();
         return;
       }
       summary.textContent = `${state.values.name}，成年女性，${state.values.body}。${state.values.hairLength}，${state.values.hairStyle}，发色为${state.values.hairColor}；${state.values.eyes}，${state.values.skin}。身着${state.values.outfit}，搭配${state.values.finishing}。性格是${state.values.personality}。`;
+      renderPrompt();
     }
 
     function formatText() {
-      const lines = ["# 现代女性人设 v1.0", "", "- 性别：女性", "- 年龄范围：18+成年"];
+      const lines = ["# 现代女性人设 v1.1", "", "- 性别：女性", "- 年龄范围：18+成年"];
       FIELDS.forEach(field => {
         lines.push(`- ${field.label.slice(5)}：${state.values[field.key] || "未生成"}${state.meta[field.key] ? `（${state.meta[field.key]}）` : ""}`);
       });
       lines.push("", `> ${document.querySelector("#summaryValue").textContent}`);
+      const prompts = buildImagePrompts();
+      lines.push("", `## 绘图提示词（${prompts.preset}）`, "", "### 正向", prompts.positive, "", "### 负向", prompts.negative);
       return lines.join("\n");
     }
 
-    async function copyText() {
-      if (!state.values.name) return showToast("请先生成一份人设");
+    async function writeClipboard(text) {
       try {
-        await navigator.clipboard.writeText(formatText());
+        await navigator.clipboard.writeText(text);
       } catch {
         const area = document.createElement("textarea");
-        area.value = formatText();
+        area.value = text;
+        area.style.position = "fixed";
+        area.style.opacity = "0";
         document.body.append(area);
         area.select();
         document.execCommand("copy");
         area.remove();
       }
+    }
+
+    async function copyText() {
+      if (!state.values.name) return showToast("请先生成一份人设");
+      await writeClipboard(formatText());
       showToast("人设已复制");
+    }
+
+    async function copyPrompt(kind) {
+      if (!state.values.name) return showToast("请先生成一份人设");
+      const prompts = buildImagePrompts();
+      const text = kind === "positive"
+        ? prompts.positive
+        : kind === "negative"
+          ? prompts.negative
+          : `Positive prompt:\n${prompts.positive}\n\nNegative prompt:\n${prompts.negative}`;
+      await writeClipboard(text);
+      showToast(kind === "all" ? "正向与负向提示词已复制" : `${kind === "positive" ? "正向" : "负向"}提示词已复制`);
     }
 
     function downloadJson() {
       if (!state.values.name) return showToast("请先生成一份人设");
       const payload = {
-        version:"modern-v1.0", gender:"female", adult:true, generatedAt:new Date().toISOString(),
+        version:"modern-v1.1", gender:"female", adult:true, generatedAt:new Date().toISOString(),
         filters:state.filters,
         character:Object.fromEntries(FIELDS.map(field => [field.key,{value:state.values[field.key],detail:state.meta[field.key] || null,colors:state.swatches[field.key] || []}])),
-        summary:document.querySelector("#summaryValue").textContent
+        summary:document.querySelector("#summaryValue").textContent,
+        imagePrompt:buildImagePrompts()
       };
       const blob = new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
       const url = URL.createObjectURL(blob);
@@ -717,7 +1076,7 @@
       delete serializableMeta.bodyConfig;
       localStorage.setItem(STORAGE_KEY,JSON.stringify({
         values:state.values, meta:serializableMeta, swatches:state.swatches,
-        locked:[...state.locked], rollCount:state.rollCount, filters:state.filters
+        locked:[...state.locked], rollCount:state.rollCount, filters:state.filters, promptPreset:state.promptPreset
       }));
     }
 
@@ -732,6 +1091,7 @@
         state.locked = new Set(saved.locked || []);
         state.rollCount = Number(saved.rollCount) || 0;
         state.filters = {...state.filters,...(saved.filters || {})};
+        state.promptPreset = PROMPT_PRESETS[saved.promptPreset] ? saved.promptPreset : "novelai";
         if (state.values.name && !state.values.personality) generatePersonality();
         persist();
       } catch {

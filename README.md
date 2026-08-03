@@ -1,10 +1,10 @@
 # 现代女性人设 Roll 机
 
-一个零依赖、零后端的现代 ACGN 女性人设随机生成器。打开网页即可生成姓名、身材、发型发色、瞳色、身体数据、肤色、穿搭、鞋袜配饰与融合性格。
+一个零依赖、零后端的现代 ACGN 女性人设随机生成器。打开网页即可生成姓名、身材、发型发色、瞳色、身体数据、肤色、穿搭、鞋袜配饰、融合性格，以及可直接用于动漫绘图模型的英文提示词。
 
 ## 当前版本
 
-- 版本：Modern v1.0
+- 版本：Modern v1.1
 - 默认角色：成年女性（18+）
 - 运行方式：纯 HTML / CSS / JavaScript
 - 数据保存：访客自己的浏览器 `localStorage`
@@ -20,6 +20,8 @@
 - 多种现代、ACGN 与日系穿搭档案
 - 鞋、袜、配饰与服装联动
 - 2–3 个无直接冲突的融合性格标签
+- NovelAI、Animagine XL 与通用 Anime 模型提示词格式
+- 自动整理正向、负向提示词，并支持分别或整组复制
 - 单项重抽、锁定、复制人设与 JSON 导出
 - 响应式布局和本地状态保存
 
@@ -44,6 +46,8 @@ python -m http.server 8080
 ├── CHANGELOG.md            # 版本变更记录
 ├── .gitignore              # 本地文件与秘密信息忽略规则
 ├── .nojekyll               # GitHub Pages 静态文件兼容
+├── tests/
+│   └── prompt-smoke.js     # 提示词批量生成与词条映射检查
 └── docs/
     ├── data-model.md       # 随机池、依赖关系和冲突规则
     └── deployment.md       # 静态托管方案
@@ -63,8 +67,15 @@ python -m http.server 8080
 - `SKINS`：肤色
 - `OUTFITS`：服装、鞋袜和配饰档案
 - `PERSONALITY_LAYERS`：性格标签及冲突关系
+- `PROMPT_PRESETS`、`OUTFIT_PROMPTS`：模型预设与绘图标签映射
 
 修改后至少执行一次 JavaScript 语法检查，并在桌面与窄屏浏览器中各生成数次结果。
+
+提示词批量冒烟测试可运行：
+
+```powershell
+node tests/prompt-smoke.js
+```
 
 ## 发布
 
@@ -79,4 +90,3 @@ python -m http.server 8080
 ## 许可
 
 仓库目前没有附加开源许可证。在选择许可证前，默认保留全部权利；公开网页不等于允许他人复制、修改或再发行源代码。
-
