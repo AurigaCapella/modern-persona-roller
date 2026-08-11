@@ -6,7 +6,7 @@
 
 ## 当前版本
 
-- 版本：Modern v1.5
+- 版本：Modern v1.6
 - 默认角色：成年女性（18+）
 - 运行方式：纯 HTML / CSS / JavaScript
 - 数据保存：访客自己的浏览器 `localStorage`
@@ -18,10 +18,13 @@
 - 三种成年女性体型及相关区间身体数据
 - 可自定义 135–210 cm 身高上下限，并以体型常见值进行低边缘概率加权
 - 纯色、染色发色与协调色板
-- 根据头发长度选择兼容发型
+- 发型拆分为 30 种前发与 94 种后发，先按五档长度筛选，再执行前后造型兼容过滤
 - 瞳色选择
 - 多种现代、ACGN 与日系穿搭档案
 - 可指定 1、2、3 个或随机数量的无冲突融合性格标签
+- 70 个正向性格标签；可选生成 1–2 个负面特质，并与正向和其他负面特质双向排除冲突
+- 可选生成“身体特征与痕迹”，包含 38 种痣、雀斑、胎记、疤痕、纹身等设定
+- 可选生成“健康状况 / 身体障碍”，包含 32 种感官、行动、慢性病与辅助器具设定
 - NovelAI、Animagine XL、通用 Anime 与 GPT Image 2 提示词格式
 - 自动整理正向/负向标签或 GPT Image 图像描述/约束条件，并支持分别或整组复制
 - 单项重抽、锁定、复制人设与 JSON 导出
@@ -63,13 +66,14 @@ python -m http.server 8080
 
 - `NAMES`：姓名库
 - `BODY_TYPES`：体型及身体数据区间
-- `HAIR_LENGTHS`：长度与发型池
+- `HAIR_LENGTHS`、`FRONT_HAIR_STYLES`、`BACK_HAIR_STYLES`：长度、前发、后发及兼容规则
 - `HAIR_COLORS`、`DYE_PAIRS`：纯色与染发配色
 - `EYE_COLORS`、`HETERO_EYES`：瞳色
 - `SKINS`：肤色
 - `OUTFITS`：服装、鞋袜和配饰档案
 - `FINISHING_EXPANSIONS`：按风格隔离的鞋袜配饰扩充池
-- `PERSONALITY_LAYERS`：性格标签及冲突关系
+- `PERSONALITY_LAYERS`、`NEGATIVE_PERSONALITIES`：正向/负面性格及双向冲突关系
+- `BODY_FEATURES`、`HEALTH_CONDITIONS`：可选身体特征与健康状况
 - `PROMPT_PRESETS`、`OUTFIT_PROMPTS`：模型预设与绘图标签映射
 
 修改后至少执行一次 JavaScript 语法检查，并在桌面与窄屏浏览器中各生成数次结果。

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="现代女性人设随机生成器">
-  <title>现代人设 Roll 机 v1.5</title>
+  <title>现代人设 Roll 机 v1.6</title>
   <style>
     :root {
       color-scheme: dark;
@@ -58,6 +58,11 @@
     .range-input { width: 96px; min-height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: rgba(255,255,255,.035); font: inherit; }
     .range-input:focus { outline: 3px solid rgba(241,200,108,.25); border-color: var(--gold); }
     .control-hint { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+    .toggle-row { display: flex; align-items: center; gap: 11px; min-height: 40px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 11px; color: var(--muted); background: rgba(255,255,255,.025); cursor: pointer; }
+    .toggle-row:hover { color: var(--text); border-color: rgba(255,255,255,.22); }
+    .toggle-input { width: 18px; height: 18px; margin: 0; accent-color: var(--gold); }
+    .toggle-copy { display: grid; gap: 2px; font-size: 12px; line-height: 1.45; }
+    .toggle-copy small { color: var(--muted); font-size: 10px; }
 
     .toolbar { position: sticky; top: 10px; z-index: 10; display: flex; flex-wrap: wrap; gap: 9px; padding: 13px; border: 1px solid var(--line); border-radius: 18px; background: rgba(18,19,25,.88); box-shadow: 0 10px 40px rgba(0,0,0,.25); backdrop-filter: blur(18px); }
     .button { min-height: 43px; padding: 0 16px; border: 1px solid var(--line); border-radius: 11px; color: var(--text); background: var(--panel-2); cursor: pointer; transition: transform .18s ease, border-color .18s ease; }
@@ -134,7 +139,7 @@
         <h1>现代人设 Roll 机</h1>
         <p class="subtitle">先选择想控制的方向，再生成一名完整的现代女性角色。发型、配色、身材数据与穿搭会沿着同一套逻辑联动。</p>
       </div>
-      <span class="version-badge">女性 · 18+ · v1.5</span>
+      <span class="version-badge">女性 · 18+ · v1.6</span>
     </header>
 
     <section class="settings" aria-labelledby="settingsTitle">
@@ -187,12 +192,97 @@
     ];
 
     const HAIR_LENGTHS = [
-      { key: "pixie", label: "极短发", meta: "耳上至耳际", styles: ["层次精灵短发", "侧分露耳短发", "法式碎短发", "微卷少年感短发", "利落后梳短发", "不对称挑层短发", "猫耳轮廓碎发", "带一撮呆毛的短发", "蓬松刺猬感短发"] },
-      { key: "short", label: "短发", meta: "耳下至下颌", styles: ["齐下颌波波头", "外翘短发", "侧分微卷短发", "挂耳一刀切", "空气感短狼尾", "法式短卷发", "内扣蘑菇头", "短发双丸子", "单侧细辫短发", "齐刘海学生感短发"] },
-      { key: "medium", label: "中长发", meta: "锁骨至胸上", styles: ["锁骨层次发", "中分水波纹", "低位半扎发", "慵懒低马尾", "公主切中长发", "羽毛感狼尾", "侧编发", "水母头", "低双马尾", "侧马尾", "半丸子头", "双麻花辫"] },
-      { key: "long", label: "长发", meta: "胸口至腰际", styles: ["大波浪长卷发", "高马尾", "顺直姬发式", "松散鱼骨辫", "法式低盘发", "双股编发", "层次蝴蝶卷", "高双马尾", "低双马尾", "公主半扎发", "螺旋双钻卷", "长直发配呆毛", "侧边团子发"] },
-      { key: "extra", label: "超长发", meta: "腰际以下", styles: ["瀑布感直长发", "超长低马尾", "宽松侧麻花辫", "古典半盘发", "层叠人鱼卷", "多股细辫长发", "超长姬发式", "双束超长马尾", "环形编发垂落", "发尾大卷公主发"] }
+      {key:"pixie",label:"极短发",meta:"耳上至耳际"}, {key:"short",label:"短发",meta:"耳下至下颌"},
+      {key:"medium",label:"中长发",meta:"锁骨至胸上"}, {key:"long",label:"长发",meta:"胸口至腰际"},
+      {key:"extra",label:"超长发",meta:"腰际以下"}
     ];
+
+    const FRONT_HAIR_STYLES = [
+      ["open-center","露额中分","open","pixie,short,medium,long,extra","no bangs|center-parted hair"],
+      ["open-side","深侧分露额","open","pixie,short,medium,long,extra","no bangs|side-parted hair"],
+      ["slicked-front","利落后梳前发","open","pixie,short,medium,long","slicked-back hair|forehead"],
+      ["wispy-bangs","轻薄空气刘海","soft","short,medium,long,extra","wispy bangs"],
+      ["french-bangs","法式碎刘海","soft","pixie,short,medium,long,extra","choppy bangs"],
+      ["feather-bangs","羽毛感薄刘海","soft","short,medium,long,extra","feathered bangs"],
+      ["curled-bangs","微卷薄刘海","soft","short,medium,long,extra","curled bangs"],
+      ["piecey-bangs","束感碎刘海","soft","pixie,short,medium,long","piecey bangs"],
+      ["blunt-brow","齐眉齐刘海","blunt","short,medium,long,extra","blunt bangs"],
+      ["micro-bangs","眉上短齐刘海","blunt","pixie,short,medium,long","short bangs"],
+      ["heavy-bangs","厚重齐刘海","blunt","short,medium,long,extra","heavy bangs|blunt bangs"],
+      ["arched-bangs","弧形齐刘海","blunt","short,medium,long","arched bangs"],
+      ["side-bangs","柔顺斜刘海","side","pixie,short,medium,long,extra","side-swept bangs"],
+      ["long-side-bangs","长侧分刘海","side","short,medium,long,extra","long bangs|side-swept bangs"],
+      ["eye-covering","单眼遮挡斜刘海","side","short,medium,long,extra","hair over one eye"],
+      ["s-curve","S 形侧刘海","side","short,medium,long,extra","swept bangs|s-shaped bangs"],
+      ["curtain","八字帘式刘海","center","short,medium,long,extra","curtain bangs"],
+      ["center-long","中分长刘海","center","short,medium,long,extra","long bangs|center-parted hair"],
+      ["face-framing","两束脸侧触须发","center","medium,long,extra","face-framing strands"],
+      ["sidelocks","垂落式长侧鬓","center","medium,long,extra","sidelocks"],
+      ["asym-choppy","不对称碎刘海","asym","pixie,short,medium,long","asymmetrical bangs"],
+      ["single-layer","单侧挑层刘海","asym","pixie,short,medium,long","asymmetrical bangs|layered bangs"],
+      ["v-bangs","V 形尖刘海","asym","short,medium,long","v-shaped bangs"],
+      ["hime-sidelocks","姬式齐切侧鬓","hime","medium,long,extra","blunt bangs|sidelocks"],
+      ["front-braid","额前单侧细辫","braided","short,medium,long,extra","front braid"],
+      ["hairline-braid","发际线编发","braided","medium,long,extra","braided bangs"],
+      ["double-front-braid","双侧额前细辫","braided","medium,long,extra","braided bangs|twin braids"],
+      ["crossed-bangs","交叉式刘海","asym","short,medium,long","crossed bangs"],
+      ["split-bangs","中央分束刘海","center","pixie,short,medium,long","parted bangs"],
+      ["ahoge-bangs","碎刘海配单撮呆毛","soft","pixie,short,medium,long,extra","choppy bangs|ahoge"]
+    ].map(([key,label,category,lengths,prompt]) => ({key,label,category,lengths:lengths.split(","),prompt:prompt.split("|")}));
+
+    const BACK_HAIR_STYLES = [
+      ["layered-pixie","层次精灵短发","pixie","pixie cut|layered hair"], ["undercut-pixie","柔和侧削精灵头","pixie","pixie cut|undercut"],
+      ["tousled-crop","蓬松凌乱短碎发","pixie","tousled hair|very short hair"], ["tapered-crop","渐层收窄短发","pixie","tapered hair|very short hair"],
+      ["curly-pixie","柔卷精灵短发","pixie","curly hair|pixie cut"], ["feathered-pixie","羽毛层次精灵头","pixie","feathered hair|pixie cut"],
+      ["pixie-wolf","极短狼尾层次","pixie","short wolf cut"], ["pixie-mullet","轻量极短鲻鱼头","pixie","short mullet"],
+      ["slick-crop","贴服后梳短发","pixie","slicked-back hair|very short hair","open,side,asym"], ["asym-pixie","不对称精灵短发","pixie","asymmetrical hair|pixie cut"],
+      ["spiky-crop","轻刺感短发","pixie","spiky hair|very short hair"], ["bowl-crop","圆润蘑菇短发","pixie","bowl cut","soft,blunt,asym"],
+      ["ear-frame-crop","贴耳轮廓短发","pixie","ear-length hair"], ["fluffy-crop","云朵感蓬松短发","pixie","fluffy hair|very short hair"],
+      ["wet-look-crop","湿发束感短发","pixie","wet hair|very short hair","open,side,asym"], ["cat-ear-crop","猫耳轮廓翘束短发","pixie","hair intakes|very short hair"],
+
+      ["classic-bob","齐下颌经典波波头","short","bob cut"], ["blunt-bob","一刀切直线波波头","short","blunt bob cut"],
+      ["french-bob","法式轻卷短波波","short","french bob|wavy hair"], ["inverted-bob","前长后短倒梯度波波","short","inverted bob"],
+      ["bubble-bob","圆蓬气泡波波头","short","bubble bob"], ["pageboy","复古内扣娃娃头","short","pageboy haircut","soft,blunt,side"],
+      ["wavy-bob","水波纹短发","short","wavy bob cut"], ["curly-bob","蓬松短卷发","short","curly bob cut"],
+      ["flipped-bob","发尾外翘短发","short","flipped hair|bob cut"], ["tucked-bob","双侧挂耳短发","short","bob cut|hair behind ears"],
+      ["short-wolf","空气感短狼尾","short","short wolf cut"], ["short-shag","碎层短沙宣狼剪","short","short shag haircut"],
+      ["short-jellyfish","短款水母头","short","jellyfish haircut"], ["short-mullet","日系短鲻鱼头","short","mullet haircut|short hair"],
+      ["asym-bob","不对称侧长波波头","short","asymmetrical bob cut"], ["mini-twintails","耳侧迷你双马尾","short","short twintails","soft,blunt,side,asym"],
+      ["mini-buns","短发双丸子","short","double buns|short hair","soft,blunt,side,asym"], ["short-crown-braid","短发半圈编发","short","crown braid|short hair","soft,side,open,braided"],
+
+      ["collarbone-layers","锁骨层次发","medium","medium hair|layered hair"], ["medium-lob","顺直锁骨长波波","medium","long bob cut"],
+      ["medium-shag","羽毛感中长碎剪","medium","medium shag haircut"], ["medium-wolf","中长羽毛狼尾","medium","wolf cut"],
+      ["medium-jellyfish","双层中长水母头","medium","jellyfish haircut"], ["medium-hime","姬式中长直发轮廓","medium","hime cut|straight hair","blunt,hime,center"],
+      ["medium-straight","柔顺中长直发","medium","straight hair|medium hair"], ["medium-waves","中长水波纹卷发","medium","wavy hair|medium hair"],
+      ["medium-curls","蓬松中长卷发","medium","curly hair|medium hair"], ["medium-low-pony","慵懒低马尾","medium","low ponytail"],
+      ["medium-side-pony","中长侧马尾","medium","side ponytail"], ["medium-low-twins","低位中长双马尾","medium","low twintails"],
+      ["medium-half-up","低位公主半扎发","medium","half updo"], ["medium-half-bun","中长半丸子头","medium","half up bun"],
+      ["medium-double-buns","中长双团子发","medium","double buns"], ["medium-twin-braids","中长双麻花辫","medium","twin braids"],
+      ["medium-side-braid","松散侧编发","medium","side braid"], ["medium-crown-braid","环形编发披肩","medium","crown braid|medium hair"],
+      ["medium-flipped","锁骨发尾外翘","medium","flipped hair|medium hair"], ["medium-bubble-pony","中长泡泡马尾","medium","bubble ponytail"],
+
+      ["long-straight","顺直披肩长发","long","long straight hair"], ["long-waves","大波浪长卷发","long","long wavy hair"],
+      ["long-curls","蓬松螺旋长卷发","long","long curly hair"], ["butterfly-layers","层次蝴蝶剪长发","long","butterfly haircut|long hair"],
+      ["long-hime","经典姬式长直轮廓","long","hime cut|long straight hair","blunt,hime,center"], ["high-pony","利落高马尾","long","high ponytail"],
+      ["low-pony","柔顺低马尾","long","low ponytail"], ["side-pony","垂落式侧马尾","long","side ponytail"],
+      ["high-twins","高位双马尾","long","high twintails"], ["low-twins","低位双马尾","long","low twintails"],
+      ["drill-twins","螺旋双钻卷","long","drill hair|twintails","blunt,soft,side,hime"], ["long-side-braid","宽松侧麻花辫","long","side braid"],
+      ["fishtail-braid","松散鱼骨辫","long","fishtail braid"], ["french-braid","单束法式编发","long","french braid"],
+      ["long-twin-braids","垂落双股编发","long","twin braids"], ["long-crown-braid","冠冕式环形编发","long","crown braid"],
+      ["princess-half-up","公主感半扎长发","long","half updo|long hair"], ["braided-half-up","编发公主半扎","long","braided half updo"],
+      ["french-low-bun","法式低盘发","long","low bun|hair updo"], ["long-double-buns","双团子垂发","long","double buns|long hair"],
+      ["braided-pony","编发高马尾","long","braided ponytail"], ["long-bubble-pony","分节泡泡马尾","long","bubble ponytail"],
+
+      ["extra-straight","瀑布感超长直发","extra","very long straight hair"], ["extra-waves","层叠人鱼卷超长发","extra","very long wavy hair"],
+      ["extra-curls","发尾大卷超长公主发","extra","very long curly hair"], ["extra-hime","超长姬式直发轮廓","extra","hime cut|very long hair","blunt,hime,center"],
+      ["extra-low-pony","超长低马尾","extra","very long hair|low ponytail"], ["extra-high-pony","超长高马尾","extra","very long hair|high ponytail"],
+      ["extra-twins","双束超长马尾","extra","very long twintails"], ["extra-side-braid","超长侧麻花辫","extra","very long hair|side braid"],
+      ["extra-mega-braid","粗束超长单辫","extra","very long braid"], ["extra-multi-braids","多股细辫超长发","extra","multiple braids|very long hair"],
+      ["extra-loop-braids","环形双编发垂落","extra","loop braids|very long hair"], ["extra-crown","冠状编发配超长垂发","extra","crown braid|very long hair"],
+      ["extra-half-up","古典半盘超长发","extra","half updo|very long hair"], ["extra-braided-pony","多段编发马尾","extra","braided ponytail|very long hair"],
+      ["extra-drills","超长双螺旋卷","extra","drill hair|very long twintails","blunt,soft,side,hime"], ["extra-mermaid","多层波纹人鱼长发","extra","mermaid hair|very long wavy hair"],
+      ["extra-ribbon-pony","缎带轮廓分束长马尾","extra","sectioned ponytail|very long hair"], ["extra-twin-braids","超长双麻花辫","extra","very long twin braids"]
+    ].map(([key,label,lengths,prompt,front]) => ({key,label,lengths:lengths.split(","),prompt:prompt.split("|"),...(front ? {front:front.split(",")} : {})}));
 
     const HAIR_COLORS = [
       { name: "自然黑", hex: "#171719" }, { name: "墨茶棕", hex: "#352B27" }, { name: "深栗棕", hex: "#4A302A" },
@@ -273,7 +363,17 @@
         { key:"tsundere", label:"傲娇", detail:"外在强硬别扭，真正关心时常用行动代替直说", conflicts:["straightforward","bubbly"] },
         { key:"kuudere", label:"酷娇", detail:"冷静寡言且情绪克制，只在信任的人面前显露柔软", conflicts:["bubbly","outgoing","emotional","genki"] },
         { key:"dandere", label:"弱气慢热", detail:"不擅主动交际，熟悉以后会逐渐展现亲近的一面", conflicts:["bubbly","outgoing","sharp","strong","genki"] },
-        { key:"devoted", label:"执着深情", detail:"认定目标后极其专一，保护欲与占有欲都偏强", conflicts:["carefree","broad-minded"] }
+        { key:"devoted", label:"执着深情", detail:"认定目标后极其专一，保护欲与占有欲都偏强", conflicts:["carefree","broad-minded"] },
+        { key:"optimistic", label:"乐观坚韧", detail:"习惯从困境中寻找可能性，受挫后恢复得很快", conflicts:["pessimistic","defeatist","apathetic"] },
+        { key:"stoic", label:"沉着坚忍", detail:"很少外露痛苦，会安静承担压力并继续行动", conflicts:["emotional","moody","crybaby"] },
+        { key:"curious", label:"好奇求知", detail:"对陌生事物充满兴趣，喜欢追根究底", conflicts:["apathetic","rigid"] },
+        { key:"disciplined", label:"自律克制", detail:"能长期维持训练和计划，不轻易被诱惑带偏", conflicts:["lazy","carefree","reckless","irresponsible"] },
+        { key:"brave", label:"勇敢无畏", detail:"面对危险仍会保护重要的人并承担后果", conflicts:["cowardly","avoidant"] },
+        { key:"pragmatic", label:"务实现实", detail:"重视可执行的方案，会优先处理眼前问题", conflicts:["dreamy","idealistic"] },
+        { key:"idealistic", label:"理想主义", detail:"相信世界可以变得更好，愿意为价值观坚持", conflicts:["cynical","pragmatic","apathetic"] },
+        { key:"adaptable", label:"灵活应变", detail:"环境变化时能迅速调整方法和节奏", conflicts:["rigid","stubborn"] },
+        { key:"compassionate", label:"富有同理心", detail:"对他人的处境敏感，愿意提供实际帮助", conflicts:["cruel","sadistic","selfish","insensitive"] },
+        { key:"independent", label:"独立自主", detail:"能够独自做决定，也尊重彼此的个人空间", conflicts:["dependent","controlling"] }
       ],
       expression: [
         { key:"bubbly", label:"热情健谈", detail:"善于活跃气氛，很容易和陌生人聊起来", conflicts:["reserved","shy","low-key","cool","tsundere","kuudere","dandere"] },
@@ -287,7 +387,17 @@
         { key:"leader", label:"可靠担当", detail:"遇到麻烦会自然接过责任并照顾全局", conflicts:["dependent","dojikko","airhead"] },
         { key:"competitive", label:"好胜不服输", detail:"喜欢挑战强者，失败后会暗自加倍努力", conflicts:["carefree"] },
         { key:"dreamy", label:"电波感", detail:"思路跳跃而独特，常说出旁人意想不到的话", conflicts:["formal","disciplined"] },
-        { key:"outgoing", label:"社交达人", detail:"擅长读懂场面，能快速融入新环境", conflicts:["reserved","shy","kuudere","dandere"] }
+        { key:"outgoing", label:"社交达人", detail:"擅长读懂场面，能快速融入新环境", conflicts:["reserved","shy","kuudere","dandere","avoidant"] },
+        { key:"humorous", label:"幽默机敏", detail:"善于用恰到好处的玩笑缓和紧张气氛", conflicts:["overly-serious"] },
+        { key:"diplomatic", label:"圆融善谈", detail:"能照顾不同立场，在冲突中寻找折中方案", conflicts:["provocative","hotheaded","blunt-hurtful"] },
+        { key:"protective", label:"护短可靠", detail:"对认可的同伴很有责任感，遇事会挡在前面", conflicts:["cowardly","selfish","apathetic"] },
+        { key:"nurturing", label:"照料型", detail:"擅长留意生活细节，让身边人感到被照顾", conflicts:["insensitive","selfish","cruel"] },
+        { key:"analytical", label:"理性分析", detail:"会拆解信息并验证推论，很少只凭第一印象", conflicts:["gullible","impulsive","airhead"] },
+        { key:"observant", label:"敏锐观察", detail:"能注意到细小变化和他人没有说出口的情绪", conflicts:["oblivious","airhead"] },
+        { key:"humble", label:"谦逊低调", detail:"不爱炫耀成果，愿意承认自己仍有不足", conflicts:["arrogant","condescending","attention-seeking"] },
+        { key:"charismatic", label:"魅力领袖", detail:"表达有感染力，很容易让人愿意跟随", conflicts:["shy","dandere","indecisive"] },
+        { key:"low-key", label:"低调克制", detail:"不争夺视线，更习惯把成果留给行动说明", conflicts:["bubbly","attention-seeking","show-off"] },
+        { key:"forgiving", label:"宽容释然", detail:"愿意理解过失并向前看，不沉溺于旧怨", conflicts:["vindictive","grudge-holding"] }
       ],
       accent: [
         { key:"dojikko", label:"迷糊冒失", detail:"偶尔笨手笨脚，却会认真补救自己的失误", conflicts:["serious","leader","perfectionist"] },
@@ -302,9 +412,124 @@
         { key:"gyaru", label:"辣妹系", detail:"时髦开朗、重视友情，表达喜恶十分鲜明", conflicts:["formal","reserved","shy","kuudere","dandere","ojousama"] },
         { key:"workaholic", label:"努力家", detail:"习惯提早准备，越是重要的事越肯下苦功", conflicts:["lazy","carefree"] },
         { key:"otaku", label:"专注宅系", detail:"面对兴趣领域知识量惊人，聊到爱好会判若两人", conflicts:[] },
-        { key:"possessive", label:"占有欲强", detail:"对珍视的关系格外敏感，希望获得明确的优先级", conflicts:["carefree","broad-minded"] }
+        { key:"possessive", label:"占有欲强", detail:"对珍视的关系格外敏感，希望获得明确的优先级", conflicts:["carefree","broad-minded"] },
+        { key:"artistic", label:"艺术家气质", detail:"对色彩、声音或文字有独到感受，习惯用创作表达", conflicts:[] },
+        { key:"inventor", label:"发明家脑回路", detail:"喜欢拆解和改造事物，总想做出更有趣的方案", conflicts:["rigid"] },
+        { key:"sleepyhead", label:"嗜睡属性", detail:"随时都像没睡醒，却能在关键时刻集中精神", conflicts:["workaholic"] },
+        { key:"collector", label:"收藏癖", detail:"会认真收集某一类物件，并记得每件物品的来历", conflicts:[] },
+        { key:"clean-freak", label:"洁净讲究", detail:"对环境整齐度十分敏感，整理东西能获得安心感", conflicts:["carefree","irresponsible"] },
+        { key:"animal-lover", label:"动物亲和", detail:"面对小动物时会明显变得柔软耐心", conflicts:["cruel"] },
+        { key:"gamer", label:"游戏达人", detail:"胜负欲和研究欲会在游戏领域充分释放", conflicts:[] },
+        { key:"occult", label:"神秘学爱好", detail:"热衷都市传说、占卜与未解现象", conflicts:["pragmatic"] },
+        { key:"romantic", label:"浪漫派", detail:"重视仪式感，喜欢为平凡时刻赋予特别意义", conflicts:["cynical"] },
+        { key:"frugal", label:"精打细算", detail:"擅长规划资源，不会为了面子进行无谓消费", conflicts:["show-off","impulsive"] },
+        { key:"fashionista", label:"时尚敏锐", detail:"熟悉流行与搭配，也有稳定的个人审美", conflicts:[] },
+        { key:"thrill-seeker", label:"冒险爱好", detail:"享受速度、新鲜感与可控的挑战", conflicts:["timid","cowardly","overcautious"] }
       ]
     };
+
+    // 负面特质只在用户启用时生成；每项列出与正向标签及其他负面标签的直接冲突。
+    const NEGATIVE_PERSONALITIES = [
+      ["jealous","嫉妒心强","很容易比较自己与他人，对关系中的偏爱格外敏感","broad-minded,forgiving,humble"],
+      ["suspicious","多疑戒备","很难完全相信口头承诺，会反复确认他人的动机","gullible,trusting"],
+      ["arrogant","傲慢自负","过度确信自己的判断，容易低估别人","humble,empathetic,compassionate"],
+      ["controlling","控制欲强","习惯替别人决定安排，难以接受计划脱离掌控","free,independent,adaptable"],
+      ["manipulative","擅长操纵","会利用信息差和情绪推动别人按自己的意图行动","straightforward,gentle,empathetic,compassionate,innocent"],
+      ["vindictive","报复心重","受到伤害后很难放下，会等待机会讨回代价","forgiving,gentle"],
+      ["cowardly","临阵退缩","面对风险容易先保护自己，事后又会为退缩自责","brave,strong,leader,protective,thrill-seeker,reckless"],
+      ["impulsive","冲动行事","情绪上来时先行动，常在冷静后才补救","cool,serious,disciplined,analytical,frugal,indecisive"],
+      ["reckless","鲁莽冒险","容易忽略危险和后果，把运气当成计划的一部分","serious,disciplined,overcautious,cowardly"],
+      ["pessimistic","悲观预期","习惯先想到失败和失去，因此容易错过机会","optimistic,genki,idealistic"],
+      ["defeatist","容易放弃","受挫后会迅速认定努力没有意义","optimistic,brave,competitive,workaholic"],
+      ["self-doubting","过度自我怀疑","即使准备充分也会质疑自己的资格与判断","confident,arrogant,show-off"],
+      ["self-sacrificing","过度自我牺牲","把他人的需要永远放在自己之前，难以求助","selfish,apathetic"],
+      ["work-obsessed","工作成瘾","用忙碌回避休息和情绪，常忽略生活关系","lazy,carefree,sleepyhead,irresponsible"],
+      ["rigid","僵化守旧","认定规则后难以接受例外或新方法","free,adaptable,curious,inventor"],
+      ["stubborn","固执己见","即使发现方向有误也不愿轻易改口","adaptable,diplomatic,indecisive"],
+      ["dependent","依赖性强","做重要决定时高度依赖特定的人，害怕独自承担","independent,strong,leader,controlling"],
+      ["avoidant","回避问题","压力越大越倾向断联或拖延面对","outgoing,straightforward,brave,attention-seeking"],
+      ["narcissistic","自我中心","总把自己的感受放在最前，期待别人围绕自己行动","humble,empathetic,compassionate,nurturing"],
+      ["attention-seeking","渴求关注","容易用夸张表现换取视线，冷场时会感到不安","low-key,humble,secretive,avoidant"],
+      ["dishonest","习惯说谎","遇到不利局面时会本能地隐藏或改写事实","straightforward,justice,honest"],
+      ["secretive","过度隐瞒","不愿分享真实计划和感受，常让同伴无法判断立场","straightforward,bubbly,attention-seeking"],
+      ["insensitive","迟钝刻薄","很少顾及话语对别人的影响，也不擅长道歉","sensitive,empathetic,compassionate,nurturing,gentle"],
+      ["hotheaded","脾气火爆","被挑衅时很快失去耐心，容易把争执升级","cool,stoic,diplomatic,gentle"],
+      ["moody","情绪多变","心情起伏会明显影响态度，让人难以预测","cool,stoic"],
+      ["obsessive","过度执念","会把目标或关系放大到压倒其他生活部分","carefree,broad-minded,apathetic"],
+      ["apathetic","冷漠疏离","对他人的困难缺少投入，也很少主动承担","gentle,empathetic,compassionate,nurturing,protective,justice,optimistic,curious,obsessive"],
+      ["irresponsible","缺乏责任感","喜欢把麻烦留到最后，出错时倾向逃避收尾","serious,disciplined,leader,workaholic,clean-freak"],
+      ["perfectionism-flaw","苛刻完美主义","无法容忍自己与他人的小失误，常因细节拖延整体","lazy,free,carefree,dojikko,airhead"],
+      ["paranoid","偏执戒备","容易把巧合解释为针对自己的威胁","gullible,broad-minded,trusting"],
+      ["cruel","冷酷残忍","会把别人的痛苦视为达成目的的可接受代价","gentle,empathetic,compassionate,nurturing,animal-lover"],
+      ["sadistic","施虐倾向","会从压制和羞辱他人中获得满足","gentle,empathetic,compassionate,masochistic"],
+      ["selfish","自私利己","遇到利益冲突时总优先满足自己","gentle,empathetic,compassionate,nurturing,protective,self-sacrificing"],
+      ["grudge-holding","记仇","会长时间记住冒犯，并在之后的互动中持续计较","forgiving,gentle"],
+      ["show-off","爱炫耀","渴望通过财富、能力或经历证明自己高人一等","low-key,humble,frugal"],
+      ["gullible","轻信天真","容易接受看似真诚的说法，缺少必要验证","cunning,analytical,observant,suspicious,paranoid"],
+      ["indecisive","优柔寡断","面对选择时反复摇摆，常错过行动时机","strong,leader,charismatic,stubborn,impulsive"],
+      ["condescending","居高临下","习惯用教训人的口吻交流，不自觉贬低他人","humble,empathetic,diplomatic"],
+      ["overcautious","过度谨慎","为了避免风险不断延后决定，难以迈出第一步","free,brave,thrill-seeker,reckless"],
+      ["crybaby","爱哭脆弱","情绪受到触动时很难控制眼泪，容易陷入无助","stoic,sharp"],
+      ["oblivious","迟钝健忘","常忽略明显暗示和重要细节，需要别人反复提醒","observant,analytical,perfectionist"]
+    ].map(([key,label,detail,conflicts]) => ({key,label,detail,conflicts:conflicts ? conflicts.split(",") : []}));
+
+    const BODY_FEATURES = [
+      ["tear-mole-left","左眼下泪痣","靠近左眼外侧的小痣","beauty mark under left eye"], ["tear-mole-right","右眼下泪痣","靠近右眼外侧的小痣","beauty mark under right eye"],
+      ["lip-mole","唇边美人痣","靠近嘴角的细小深色痣","beauty mark near lips"], ["brow-mole","眉尾小痣","位于眉尾下方的细小痣","beauty mark near eyebrow"],
+      ["collarbone-mole","锁骨小痣","锁骨附近有一枚醒目的小痣","beauty mark on collarbone"], ["neck-mole","颈侧小痣","颈侧靠近耳下的位置有一枚小痣","beauty mark on neck"],
+      ["nose-freckles","鼻梁雀斑","细密雀斑集中在鼻梁和上颊","freckles across nose"], ["cheek-freckles","双颊雀斑","两侧脸颊散布柔和雀斑","freckles on cheeks"],
+      ["shoulder-freckles","肩背日晒雀斑","肩头与上背有浅淡日晒雀斑","freckles on shoulders"], ["crescent-birthmark","手腕月牙胎记","内侧手腕有月牙形浅色胎记","crescent birthmark on wrist"],
+      ["leaf-birthmark","后腰叶形胎记","后腰有一小片叶形胎记","leaf-shaped birthmark on lower back"], ["shoulder-birthmark","肩头淡色胎记","一侧肩头有不规则淡色胎记","birthmark on shoulder"],
+      ["collarbone-birthmark","锁骨云状胎记","锁骨附近有小片云状胎记","cloud-shaped birthmark near collarbone"], ["eyebrow-scar","眉尾短疤","眉尾被一道短疤轻微截断","small scar through eyebrow"],
+      ["nose-scar","鼻梁细疤","鼻梁横过一道浅淡细疤","thin scar across nose"], ["lip-scar","下唇细疤","下唇边缘留有一小段旧疤","small scar on lower lip"],
+      ["eye-scar","眼下竖疤","一侧眼下有短而浅的竖向旧疤","small vertical scar below eye"], ["hand-scar","手背旧伤疤","惯用手手背留有一道旧疤","scar on back of hand"],
+      ["knee-scar","膝盖擦伤疤","一侧膝盖有浅色旧擦伤疤","old scar on knee"], ["side-surgery-scar","腹侧手术疤","腹侧留有整齐愈合的手术疤","surgical scar on side"],
+      ["shoulder-blade-scar","肩胛长疤","一侧肩胛留有细长旧疤","long scar on shoulder blade"], ["forearm-burn-scar","前臂烧伤疤","前臂有一片已愈合的烧伤疤","healed burn scar on forearm"],
+      ["back-burn-scar","背部淡烫伤疤","上背有边缘柔和的浅色烫伤疤","faint burn scar on upper back"], ["palm-callus","掌心薄茧","掌心和指根有长期训练形成的薄茧","callused palms"],
+      ["finger-callus","指尖薄茧","指尖有乐器或手工训练留下的薄茧","callused fingertips"], ["knuckle-marks","指节旧伤痕","指节有几处已经淡去的旧伤痕","scarred knuckles"],
+      ["neck-tattoo","颈侧小型纹身","颈侧有简洁线条小纹身","small neck tattoo"], ["shoulder-tattoo","肩胛植物纹身","肩胛处有小型植物线稿纹身","botanical tattoo on shoulder blade"],
+      ["ankle-tattoo","脚踝图腾纹身","脚踝环绕一圈细线图腾纹身","ankle tattoo"], ["waist-tattoo","腰侧花纹纹身","腰侧有小面积装饰花纹纹身","small side tattoo"],
+      ["single-dimple","单侧酒窝","微笑时只有一侧脸颊出现酒窝","single cheek dimple"], ["double-dimples","双侧酒窝","微笑时两侧脸颊都有浅酒窝","dimples"],
+      ["fang","单侧小虎牙","笑起来时露出一枚略尖的小虎牙","single fang"], ["dark-circles","淡淡黑眼圈","眼下有轻微睡眠不足般的阴影","subtle dark circles under eyes"],
+      ["sun-tan-lines","浅淡晒痕","肩颈留有层次柔和的日晒色差","subtle tan lines"], ["vitiligo-patch","局部白斑纹理","手背或颈侧有边界自然的浅色皮肤斑块","vitiligo patches"],
+      ["heterochromic-brow","双色眉毛","一侧眉毛有天然浅色毛束","partially white eyebrow"], ["scar-cluster","前臂细碎旧疤","前臂分布几道浅淡细小旧疤","multiple faint scars on forearm"]
+    ].map(([key,label,detail,prompt]) => ({key,label,detail,prompt:prompt ? prompt.split("|") : []}));
+
+    // 健康状况采用中性、功能导向描述；隐性疾病不强行转换成外观标签。
+    const HEALTH_CONDITIONS = [
+      ["low-vision","低视力","视力显著受限，会使用大字、放大工具或高对比度标识","low vision aid"],
+      ["blind","失明","主要依靠听觉、触觉与方向训练行动","white cane"],
+      ["monocular","单眼视力缺失","一侧眼睛失去有效视力，深度判断需要适应","eyepatch"],
+      ["color-blind","色觉障碍","辨认部分颜色组合时需要标签或辅助工具",""],
+      ["hard-of-hearing","听力受损","在嘈杂环境中较难辨认语言，会使用助听设备","hearing aid"],
+      ["deaf","失聪","主要使用手语、文字或读唇进行交流","hearing aid"],
+      ["mute","言语障碍","无法或很难使用口语，会借助手语或文字沟通","communication tablet"],
+      ["tinnitus","慢性耳鸣","安静环境中会持续听到耳鸣，需要背景声帮助集中",""],
+      ["cane-user","下肢行动受限","长距离行走较困难，日常会使用手杖","walking cane"],
+      ["crutch-user","单侧腿部行动受限","负重与平衡受限，需要前臂拐辅助行走","forearm crutch"],
+      ["wheelchair-user","轮椅使用者","下肢活动受限，主要使用轮椅移动","wheelchair"],
+      ["prosthetic-arm","上肢缺失 / 义肢","一侧上肢为功能性义肢","prosthetic arm"],
+      ["prosthetic-leg","下肢缺失 / 义肢","一侧下肢为功能性义肢","prosthetic leg"],
+      ["limited-hand","单手活动受限","一侧手部精细动作受限，会调整工具与操作方式","hand brace"],
+      ["chronic-pain","慢性疼痛","疼痛会周期性影响体力与动作，需要安排休息",""],
+      ["joint-condition","慢性关节问题","关节负荷过高时会疼痛，常使用护具稳定","joint brace"],
+      ["balance-disorder","平衡功能障碍","快速转身或复杂地面容易失衡，会借助支撑","walking cane"],
+      ["tremor","手部震颤","紧张或疲劳时手部震颤会加重",""],
+      ["asthma","哮喘","剧烈运动或空气刺激可能诱发呼吸困难，随身携带吸入器","inhaler"],
+      ["arrhythmia","心律失常","高强度活动需要谨慎，并会定期接受监测","medical alert bracelet"],
+      ["congenital-heart","先天性心脏病","体力上限较低，需要避免长时间过度负荷","medical alert bracelet"],
+      ["anemia","慢性贫血","容易疲劳和眩晕，需要更稳定的作息与补给",""],
+      ["migraine","偏头痛","强光、噪声或压力可能引发发作","tinted glasses"],
+      ["epilepsy","癫痫","需要规律用药并避开已知诱发因素","medical alert bracelet"],
+      ["diabetes","糖尿病","需要监测血糖并随身准备药物与补给","continuous glucose monitor"],
+      ["chronic-fatigue","慢性疲劳","体力恢复较慢，活动安排需要保留充足缓冲",""],
+      ["autoimmune","自身免疫性疾病","症状会周期性波动，需要长期治疗和休息管理",""],
+      ["photosensitive","光敏感","强光下容易不适，会使用遮阳镜和防护衣物","tinted glasses"],
+      ["respiratory","慢性呼吸系统疾病","耐力受限，需要避免烟尘与过冷空气","respirator mask"],
+      ["weak-constitution","体弱易病","恢复速度较慢，季节变化时更容易不适",""],
+      ["insomnia","慢性失眠","睡眠持续不足，白天容易疲惫或注意力下降",""],
+      ["food-allergy","严重食物过敏","需要严格避开过敏原并随身携带急救药物","medical alert bracelet"]
+    ].map(([key,label,detail,prompt]) => ({key,label,detail,prompt:prompt ? prompt.split("|") : []}));
 
     const OUTFITS = {
       separates: [
@@ -547,7 +772,28 @@
       dreamy:["distant gaze"], outgoing:["friendly smile"], dojikko:["flustered expression"], chuunibyou:["dramatic pose"],
       "little-devil":["mischievous smile"], ojousama:["ojou-sama pose"], airhead:["innocent smile"], bookish:["bookish"],
       perfectionist:["neat appearance"], foodie:["happy expression"], justice:["determined pose"], gyaru:["gyaru", "confident smile"],
-      workaholic:["focused expression"], otaku:["enthusiastic expression"], possessive:["intense gaze"]
+      workaholic:["focused expression"], otaku:["enthusiastic expression"], possessive:["intense gaze"],
+      optimistic:["hopeful smile"], stoic:["stoic expression"], curious:["curious gaze"], disciplined:["composed posture"],
+      brave:["fearless gaze"], pragmatic:["practical demeanor"], idealistic:["hopeful expression"], adaptable:["relaxed confidence"],
+      compassionate:["compassionate eyes"], independent:["self-assured pose"], humorous:["wry smile"], diplomatic:["calm smile"],
+      protective:["protective stance"], nurturing:["warm expression"], analytical:["analytical gaze"], observant:["attentive gaze"],
+      humble:["modest smile"], charismatic:["charismatic pose"], "low-key":["subdued expression"], forgiving:["serene expression"],
+      artistic:["artistic demeanor"], inventor:["inventive expression"], sleepyhead:["sleepy eyes"], collector:["careful pose"],
+      "clean-freak":["immaculate appearance"], "animal-lover":["gentle expression"], gamer:["focused expression"], occult:["mysterious expression"],
+      romantic:["soft romantic expression"], frugal:["practical styling"], fashionista:["fashionable pose"], "thrill-seeker":["adventurous smile"]
+    };
+
+    const NEGATIVE_PERSONALITY_PROMPTS = {
+      jealous:["jealous glance"], suspicious:["guarded expression"], arrogant:["smug expression"], controlling:["commanding pose"],
+      manipulative:["calculating smile"], vindictive:["cold glare"], cowardly:["nervous posture"], impulsive:["impulsive pose"],
+      reckless:["reckless grin"], pessimistic:["pessimistic expression"], defeatist:["discouraged expression"], "self-doubting":["uncertain gaze"],
+      "self-sacrificing":["weary but caring expression"], "work-obsessed":["exhausted focused expression"], rigid:["rigid posture"], stubborn:["stubborn expression"],
+      dependent:["clingy posture"], avoidant:["averted gaze"], narcissistic:["self-satisfied expression"], "attention-seeking":["dramatic pose"],
+      dishonest:["evasively smiling"], secretive:["guarded expression"], insensitive:["aloof expression"], hotheaded:["angry expression"],
+      moody:["moody expression"], obsessive:["intense gaze"], apathetic:["apathetic expression"], irresponsible:["careless posture"],
+      "perfectionism-flaw":["tense meticulous expression"], paranoid:["wary expression"], cruel:["cold expression"], sadistic:["sadistic smile"],
+      selfish:["self-centered pose"], "grudge-holding":["resentful expression"], "show-off":["showy pose"], gullible:["naive expression"],
+      indecisive:["hesitant pose"], condescending:["condescending smile"], overcautious:["guarded posture"], crybaby:["teary eyes"], oblivious:["absent-minded expression"]
     };
 
     const FILTERS = [
@@ -558,7 +804,10 @@
       { key:"heightRange", label:"07 · 身高范围（cm）", type:"range", wide:true },
       { key:"outfitType", label:"09 · 服装结构", wide:true, options:[["random","随机"],["separates","上下装"],["dress","连衣裙"],["jumpsuit","连体装"],["layered","叠穿"]] },
       { key:"finishingMode", label:"10 · 鞋袜配饰联动", wide:true, options:[["linked","跟随当前衣着"],["independent","解除绑定 · 独立 Roll"]] },
-      { key:"personalityCount", label:"11 · 性格标签数量", wide:true, options:[["random","随机 1–3 个"],["1","1 个"],["2","2 个"],["3","3 个"]] }
+      { key:"personalityCount", label:"11.1 · 性格标签数量", wide:true, options:[["random","随机 1–3 个"],["1","1 个"],["2","2 个"],["3","3 个"]] },
+      { key:"negativePersonality", label:"11.2 · 负面性格", type:"toggle", text:"生成负面性格", hint:"启用后随机 1–2 个，并与正向性格双向排除冲突" },
+      { key:"bodyFeatures", label:"12 · 身体特征与痕迹", type:"toggle", text:"生成身体特征", hint:"启用后增加痣、雀斑、胎记、疤痕等可见特征" },
+      { key:"healthConditions", label:"13 · 健康状况 / 身体障碍", type:"toggle", text:"生成健康状况", hint:"采用中性功能描述；隐性疾病不会被强行视觉化" }
     ];
 
     const FIELDS = [
@@ -566,20 +815,25 @@
       { key:"body", label:"02 · 身材" },
       { key:"hairColor", label:"03 · 发色" },
       { key:"hairLength", label:"04 · 头发长度" },
-      { key:"hairStyle", label:"05 · 发型" },
+      { key:"frontHair", label:"05.1 · 前发" },
+      { key:"backHair", label:"05.2 · 后发" },
       { key:"eyes", label:"06 · 瞳色" },
       { key:"measurements", label:"07 · 身体数据" },
       { key:"skin", label:"08 · 肤色" },
+      { key:"bodyFeatures", label:"08.1 · 身体特征与痕迹", enabledBy:"bodyFeatures" },
+      { key:"healthConditions", label:"08.2 · 健康状况 / 身体障碍", enabledBy:"healthConditions" },
       { key:"outfit", label:"09 · 衣着" },
       { key:"finishing", label:"10 · 鞋袜与配饰" },
-      { key:"personality", label:"11 · 性格" }
+      { key:"personality", label:"11.1 · 性格" },
+      { key:"negativePersonality", label:"11.2 · 负面性格", enabledBy:"negativePersonality" }
     ];
 
     const state = {
       values: {}, meta: {}, swatches: {}, locked: new Set(), rollCount: 0,
       filters: {
         nameCulture:"random", bodyType:"random", hairMode:"random", eyeMode:"random", outfitType:"random",
-        finishingMode:"linked", personalityCount:"random", heightMin:145, heightMax:185
+        finishingMode:"linked", personalityCount:"random", negativePersonality:false,
+        bodyFeatures:false, healthConditions:false, heightMin:145, heightMax:185
       },
       promptPreset: "novelai"
     };
@@ -596,6 +850,8 @@
     };
     const integer = ([min,max]) => Math.floor(Math.random() * (max-min+1)) + min;
     const chooseFilter = (key, keys) => state.filters[key] === "random" ? pick(keys) : state.filters[key];
+    const fieldEnabled = field => !field.enabledBy || Boolean(state.filters[field.enabledBy]);
+    const fieldName = field => field.label.replace(/^\d+(?:\.\d+)?\s*·\s*/,"");
 
     function buildControls() {
       FILTERS.forEach(filter => {
@@ -635,6 +891,23 @@
           hint.className = "control-hint";
           hint.id = "heightRangeHint";
           group.append(row,hint);
+        } else if (filter.type === "toggle") {
+          const toggle = document.createElement("label");
+          toggle.className = "toggle-row";
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.className = "toggle-input";
+          input.dataset.toggleFilter = filter.key;
+          input.addEventListener("change", () => setFilter(filter.key,input.checked));
+          const copy = document.createElement("span");
+          copy.className = "toggle-copy";
+          const text = document.createElement("span");
+          text.textContent = filter.text;
+          const hint = document.createElement("small");
+          hint.textContent = filter.hint;
+          copy.append(text,hint);
+          toggle.append(input,copy);
+          group.append(toggle);
         } else {
           const segments = document.createElement("div");
           segments.className = "segments";
@@ -660,6 +933,20 @@
     function setFilter(key,value) {
       state.filters[key] = value;
       if (key === "finishingMode") updateFinishingLockDependency();
+      if (["negativePersonality","bodyFeatures","healthConditions"].includes(key)) {
+        const fieldKey = key;
+        if (value && state.values.name) GENERATORS[fieldKey]();
+        if (!value) {
+          delete state.values[fieldKey];
+          delete state.meta[fieldKey];
+          if (key === "negativePersonality") delete state.meta.negativePersonalityKeys;
+          if (key === "bodyFeatures") delete state.meta.bodyFeatureKey;
+          if (key === "healthConditions") delete state.meta.healthConditionKey;
+          delete state.swatches[fieldKey];
+          state.locked.delete(fieldKey);
+        }
+        renderAll(false);
+      }
       updateControls();
       persist();
     }
@@ -703,6 +990,9 @@
       controls.querySelectorAll("[data-height-bound]").forEach(input => {
         input.value = state.filters[input.dataset.heightBound];
       });
+      controls.querySelectorAll("[data-toggle-filter]").forEach(input => {
+        input.checked = Boolean(state.filters[input.dataset.toggleFilter]);
+      });
       const hint = controls.querySelector("#heightRangeHint");
       if (hint) hint.textContent = `${state.filters.heightMin}–${state.filters.heightMax} cm · 体型常见值权重最高，越靠近上下限概率越低`;
     }
@@ -712,6 +1002,7 @@
         const card = document.createElement("article");
         card.className = "card";
         card.dataset.key = field.key;
+        card.hidden = !fieldEnabled(field);
         const head = document.createElement("div");
         head.className = "card-head";
         const label = document.createElement("span");
@@ -723,7 +1014,7 @@
         reroll.className = "icon-button reroll";
         reroll.type = "button";
         reroll.textContent = "↻";
-        reroll.title = `重抽${field.label.slice(5)}`;
+        reroll.title = `重抽${fieldName(field)}`;
         reroll.setAttribute("aria-label", reroll.title);
         reroll.addEventListener("click", () => rerollField(field.key));
         const lock = document.createElement("button");
@@ -904,10 +1195,27 @@
       state.meta.hairLengthKey = length.key;
     }
 
-    function generateHairStyle() {
+    function generateBackHair() {
       const length = HAIR_LENGTHS.find(item => item.key === state.meta.hairLengthKey) || pick(HAIR_LENGTHS);
-      state.values.hairStyle = pick(length.styles);
-      state.meta.hairStyle = `适配：${length.label}（${length.meta}）`;
+      const lockedFront = FRONT_HAIR_STYLES.find(item => item.key === state.meta.frontHairKey);
+      let candidates = BACK_HAIR_STYLES.filter(item => item.lengths.includes(length.key));
+      if (state.locked.has("frontHair") && lockedFront) {
+        candidates = candidates.filter(item => !item.front || item.front.includes(lockedFront.category));
+      }
+      const style = pick(candidates);
+      state.values.backHair = style.label;
+      state.meta.backHair = `适配：${length.label}（${length.meta}）· 后部轮廓`;
+      state.meta.backHairKey = style.key;
+    }
+
+    function generateFrontHair() {
+      const length = HAIR_LENGTHS.find(item => item.key === state.meta.hairLengthKey) || pick(HAIR_LENGTHS);
+      const back = BACK_HAIR_STYLES.find(item => item.key === state.meta.backHairKey) || pick(BACK_HAIR_STYLES.filter(item => item.lengths.includes(length.key)));
+      const candidates = FRONT_HAIR_STYLES.filter(item => item.lengths.includes(length.key) && (!back.front || back.front.includes(item.category)));
+      const style = pick(candidates);
+      state.values.frontHair = style.label;
+      state.meta.frontHair = `适配：${length.label} · 与“${back.label}”协调`;
+      state.meta.frontHairKey = style.key;
     }
 
     function generateEyes() {
@@ -930,6 +1238,20 @@
       state.values.skin = skin.name;
       state.meta.skin = `${skin.meta} · 参考色 ${skin.hex}`;
       state.swatches.skin = [skin.hex];
+    }
+
+    function generateBodyFeatures() {
+      const feature = pick(BODY_FEATURES);
+      state.values.bodyFeatures = feature.label;
+      state.meta.bodyFeatures = feature.detail;
+      state.meta.bodyFeatureKey = feature.key;
+    }
+
+    function generateHealthConditions() {
+      const condition = pick(HEALTH_CONDITIONS);
+      state.values.healthConditions = condition.label;
+      state.meta.healthConditions = condition.detail;
+      state.meta.healthConditionKey = condition.key;
     }
 
     function generateOutfit() {
@@ -985,10 +1307,29 @@
       state.meta.personalityKeys = selected.map(tag => tag.key);
     }
 
+    function generateNegativePersonality() {
+      const positiveByKey = new Map(Object.values(PERSONALITY_LAYERS).flat().map(tag => [tag.key,tag]));
+      const positives = (state.meta.personalityKeys || []).map(key => positiveByKey.get(key)).filter(Boolean);
+      const compatibleCandidates = NEGATIVE_PERSONALITIES.filter(negative => positives.every(positive => personalitiesCompatible(negative,positive)));
+      if (!compatibleCandidates.length) throw new Error("没有与当前性格兼容的负面特质");
+      const baseCandidates = compatibleCandidates;
+      const first = pick(baseCandidates);
+      const selected = [first];
+      if (Math.random() < .5) {
+        const secondCandidates = baseCandidates.filter(negative => negative !== first && personalitiesCompatible(first,negative));
+        if (secondCandidates.length) selected.push(pick(secondCandidates));
+      }
+      state.values.negativePersonality = selected.map(tag => tag.label).join(" × ");
+      state.meta.negativePersonality = selected.map(tag => tag.detail).join("；");
+      state.meta.negativePersonalityKeys = selected.map(tag => tag.key);
+    }
+
     const GENERATORS = {
       name:generateName, body:generateBody, hairColor:generateHairColor, hairLength:generateHairLength,
-      hairStyle:generateHairStyle, eyes:generateEyes, measurements:generateMeasurements,
-      skin:generateSkin, outfit:generateOutfit, finishing:generateFinishing, personality:generatePersonality
+      frontHair:generateFrontHair, backHair:generateBackHair, eyes:generateEyes, measurements:generateMeasurements,
+      skin:generateSkin, bodyFeatures:generateBodyFeatures, healthConditions:generateHealthConditions,
+      outfit:generateOutfit, finishing:generateFinishing, personality:generatePersonality,
+      negativePersonality:generateNegativePersonality
     };
 
     function rollAllFields() {
@@ -996,13 +1337,17 @@
       if (!state.locked.has("body")) generateBody();
       if (!state.locked.has("hairColor")) generateHairColor();
       if (!state.locked.has("hairLength")) generateHairLength();
-      if (!state.locked.has("hairStyle")) generateHairStyle();
+      if (!state.locked.has("backHair")) generateBackHair();
+      if (!state.locked.has("frontHair")) generateFrontHair();
       if (!state.locked.has("eyes")) generateEyes();
       if (!state.locked.has("measurements")) generateMeasurements();
       if (!state.locked.has("skin")) generateSkin();
+      if (state.filters.bodyFeatures && !state.locked.has("bodyFeatures")) generateBodyFeatures();
+      if (state.filters.healthConditions && !state.locked.has("healthConditions")) generateHealthConditions();
       if (!state.locked.has("outfit")) generateOutfit();
       if (!state.locked.has("finishing")) generateFinishing();
       if (!state.locked.has("personality")) generatePersonality();
+      if (state.filters.negativePersonality && !state.locked.has("negativePersonality")) generateNegativePersonality();
       state.rollCount += 1;
       renderAll(true);
       persist();
@@ -1012,8 +1357,13 @@
       if (state.locked.has(key)) return;
       GENERATORS[key]();
       if (key === "body" && !state.locked.has("measurements")) generateMeasurements();
-      if (key === "hairLength" && !state.locked.has("hairStyle")) generateHairStyle();
+      if (key === "hairLength") {
+        if (!state.locked.has("backHair")) generateBackHair();
+        if (!state.locked.has("frontHair")) generateFrontHair();
+      }
+      if (key === "backHair" && !state.locked.has("frontHair")) generateFrontHair();
       if (key === "outfit" && state.filters.finishingMode === "linked" && !state.locked.has("finishing")) generateFinishing();
+      if (key === "personality" && state.filters.negativePersonality && !state.locked.has("negativePersonality")) generateNegativePersonality();
       renderAll(true);
       persist();
     }
@@ -1027,7 +1377,7 @@
         }
       } else {
         state.locked.add(key);
-        if (key === "hairStyle") state.locked.add("hairLength");
+        if (key === "frontHair" || key === "backHair") state.locked.add("hairLength");
         if (key === "measurements") state.locked.add("body");
         if (key === "finishing" && state.filters.finishingMode === "linked") {
           if (!state.locked.has("outfit")) state.meta.finishingAutoLockedOutfit = true;
@@ -1047,7 +1397,11 @@
 
     function renderAll(animate=false) {
       rollCount.textContent = state.rollCount;
-      FIELDS.forEach(field => renderCard(field.key,animate));
+      FIELDS.forEach(field => {
+        const card = grid.querySelector(`[data-key="${field.key}"]`);
+        if (card) card.hidden = !fieldEnabled(field);
+        if (fieldEnabled(field)) renderCard(field.key,animate);
+      });
       updateSummary();
     }
 
@@ -1110,35 +1464,6 @@
       return lightness > .62 ? "pink" : "purple";
     }
 
-    function hairStylePromptTags(style) {
-      const tags = [];
-      if (style.includes("水母头")) tags.push("jellyfish cut");
-      else if (style.includes("姬发式")) tags.push("hime cut");
-      else if (style.includes("狼尾")) tags.push("wolf cut");
-      else if (style.includes("波波头")) tags.push("bob cut");
-      else if (style.includes("蘑菇头")) tags.push("bowl cut");
-      if (style.includes("双马尾")) tags.push("twintails");
-      else if (style.includes("侧马尾")) tags.push("side ponytail");
-      else if (style.includes("马尾")) tags.push("ponytail");
-      if (style.includes("双丸子") || style.includes("双团子")) tags.push("double buns");
-      else if (style.includes("丸子") || style.includes("团子")) tags.push("hair bun");
-      if (style.includes("双麻花辫") || style.includes("双股编发")) tags.push("twin braids");
-      else if (style.includes("辫") || style.includes("编发")) tags.push("braid");
-      if (style.includes("盘发")) tags.push("hair updo");
-      if (style.includes("半扎")) tags.push("half updo");
-      if (style.includes("大波浪") || style.includes("水波纹") || style.includes("人鱼卷") || style.includes("蝴蝶卷")) tags.push("wavy hair");
-      else if (style.includes("卷")) tags.push("curly hair");
-      if (style.includes("直发") || style.includes("一刀切") || style.includes("顺直")) tags.push("straight hair");
-      if (style.includes("齐刘海")) tags.push("blunt bangs");
-      if (style.includes("侧分")) tags.push("side-parted hair");
-      if (style.includes("中分")) tags.push("center-parted hair");
-      if (style.includes("露耳") || style.includes("挂耳")) tags.push("hair behind ear");
-      if (style.includes("外翘")) tags.push("flipped hair");
-      if (style.includes("呆毛")) tags.push("ahoge");
-      if (style.includes("不对称")) tags.push("asymmetrical hair");
-      return uniqueTags(tags.length ? tags : ["styled hair"]);
-    }
-
     function footwearPrompt(text) {
       const rules = [
         ["茶会","tea party shoes"], ["摇摇鞋","rocking horse shoes"], ["玛丽珍","mary janes"], ["乐福","loafers"],
@@ -1196,7 +1521,10 @@
 
       const lengthTags = { pixie:"very short hair", short:"short hair", medium:"medium hair", long:"long hair", extra:"very long hair" };
       tags.push(lengthTags[state.meta.hairLengthKey]);
-      tags.push(...hairStylePromptTags(state.values.hairStyle || ""));
+      const frontHair = FRONT_HAIR_STYLES.find(item => item.key === state.meta.frontHairKey);
+      const backHair = BACK_HAIR_STYLES.find(item => item.key === state.meta.backHairKey);
+      if (frontHair) tags.push(...frontHair.prompt);
+      if (backHair) tags.push(...backHair.prompt);
 
       const hairParts = String(state.values.hairColor || "").split(" · ");
       if (state.meta.hairColor === "纯色") {
@@ -1224,6 +1552,14 @@
 
       const skinTags = { "瓷白":"pale skin", "冷白":"fair skin", "暖白":"fair skin", "自然肤色":"light tan skin", "蜜糖色":"tan skin", "小麦色":"tan skin", "深棕肤色":"dark skin" };
       tags.push(skinTags[state.values.skin]);
+      if (state.filters.bodyFeatures) {
+        const bodyFeature = BODY_FEATURES.find(item => item.key === state.meta.bodyFeatureKey);
+        if (bodyFeature) tags.push(...bodyFeature.prompt);
+      }
+      if (state.filters.healthConditions) {
+        const healthCondition = HEALTH_CONDITIONS.find(item => item.key === state.meta.healthConditionKey);
+        if (healthCondition) tags.push(...healthCondition.prompt);
+      }
 
       const outfitMain = String(state.values.outfit || "").split(" · ").slice(1).join(" · ");
       tags.push(...(OUTFIT_PROMPTS[outfitMain] || ["modern clothes"]));
@@ -1236,6 +1572,9 @@
       const accessories = (finishingMeta.includes("配饰：") ? finishingMeta.split("配饰：").pop() : finishingMeta).split(" + ");
       tags.push(...accessories.map(accessoryPrompt));
       (state.meta.personalityKeys || []).forEach(key => tags.push(...(PERSONALITY_PROMPTS[key] || [])));
+      if (state.filters.negativePersonality) {
+        (state.meta.negativePersonalityKeys || []).forEach(key => tags.push(...(NEGATIVE_PERSONALITY_PROMPTS[key] || [])));
+      }
       return uniqueTags(tags);
     }
 
@@ -1272,7 +1611,7 @@
         ].join("\n\n");
         const constraints = [
           "Constraints:",
-          "- Faithfully preserve every specified hairstyle, hair-color placement, eye color, clothing layer, shoe, sock, and accessory.",
+          "- Faithfully preserve every specified front and back hairstyle, hair-color placement, eye color, visible body feature, assistive device, clothing layer, shoe, sock, and accessory.",
           "- Keep the selected color relationships coherent and visually distinct.",
           "- Keep the anatomy and pose natural, with coherent hands, fingers, limbs, and body proportions.",
           "- Include exactly one character; do not add extra people, limbs, clothing layers, or accessories.",
@@ -1326,14 +1665,17 @@
         renderPrompt();
         return;
       }
-      summary.textContent = `${state.values.name}，成年女性，${state.values.body}。${state.values.hairLength}，${state.values.hairStyle}，发色为${state.values.hairColor}；${state.values.eyes}，${state.values.skin}。身着${state.values.outfit}，搭配${state.values.finishing}。性格是${state.values.personality}。`;
+      const featureText = state.filters.bodyFeatures ? `身体特征为${state.values.bodyFeatures}。` : "";
+      const healthText = state.filters.healthConditions ? `健康状况 / 身体障碍为${state.values.healthConditions}。` : "";
+      const negativeText = state.filters.negativePersonality ? `负面性格是${state.values.negativePersonality}。` : "";
+      summary.textContent = `${state.values.name}，成年女性，${state.values.body}。${state.values.hairLength}，前发为${state.values.frontHair}，后发为${state.values.backHair}，发色为${state.values.hairColor}；${state.values.eyes}，${state.values.skin}。${featureText}${healthText}身着${state.values.outfit}，搭配${state.values.finishing}。性格是${state.values.personality}。${negativeText}`;
       renderPrompt();
     }
 
     function formatText() {
-      const lines = ["# 现代女性人设 v1.5", "", "- 性别：女性", "- 年龄范围：18+成年"];
-      FIELDS.forEach(field => {
-        lines.push(`- ${field.label.slice(5)}：${state.values[field.key] || "未生成"}${state.meta[field.key] ? `（${state.meta[field.key]}）` : ""}`);
+      const lines = ["# 现代女性人设 v1.6", "", "- 性别：女性", "- 年龄范围：18+成年"];
+      FIELDS.filter(fieldEnabled).forEach(field => {
+        lines.push(`- ${fieldName(field)}：${state.values[field.key] || "未生成"}${state.meta[field.key] ? `（${state.meta[field.key]}）` : ""}`);
       });
       lines.push("", `> ${document.querySelector("#summaryValue").textContent}`);
       const prompts = buildImagePrompts();
@@ -1383,9 +1725,9 @@
     function downloadJson() {
       if (!state.values.name) return showToast("请先生成一份人设");
       const payload = {
-        version:"modern-v1.5", gender:"female", adult:true, generatedAt:new Date().toISOString(),
+        version:"modern-v1.6", gender:"female", adult:true, generatedAt:new Date().toISOString(),
         filters:state.filters,
-        character:Object.fromEntries(FIELDS.map(field => [field.key,{value:state.values[field.key],detail:state.meta[field.key] || null,colors:state.swatches[field.key] || []}])),
+        character:Object.fromEntries(FIELDS.filter(fieldEnabled).map(field => [field.key,{value:state.values[field.key],detail:state.meta[field.key] || null,colors:state.swatches[field.key] || []}])),
         summary:document.querySelector("#summaryValue").textContent,
         imagePrompt:buildImagePrompts()
       };
@@ -1421,10 +1763,24 @@
         state.filters = {...state.filters,...(saved.filters || {})};
         state.filters.finishingMode = state.filters.finishingMode === "independent" ? "independent" : "linked";
         state.filters.personalityCount = ["random","1","2","3"].includes(String(state.filters.personalityCount)) ? String(state.filters.personalityCount) : "random";
+        ["negativePersonality","bodyFeatures","healthConditions"].forEach(key => {
+          state.filters[key] = state.filters[key] === true;
+        });
         normalizeHeightRange();
         updateFinishingLockDependency();
         state.promptPreset = PROMPT_PRESETS[saved.promptPreset] ? saved.promptPreset : "novelai";
+        delete state.values.hairStyle;
+        delete state.meta.hairStyle;
+        state.locked.delete("hairStyle");
+        if (state.values.name && (!state.values.backHair || !state.values.frontHair)) {
+          if (!state.meta.hairLengthKey) generateHairLength();
+          generateBackHair();
+          generateFrontHair();
+        }
         if (state.values.name && !state.values.personality) generatePersonality();
+        if (state.values.name && state.filters.negativePersonality && !state.values.negativePersonality) generateNegativePersonality();
+        if (state.values.name && state.filters.bodyFeatures && !state.values.bodyFeatures) generateBodyFeatures();
+        if (state.values.name && state.filters.healthConditions && !state.values.healthConditions) generateHealthConditions();
         persist();
       } catch {
         localStorage.removeItem(STORAGE_KEY);
