@@ -4,6 +4,8 @@
 
 不想下载可以访问: https://aurigacapella.github.io/modern-persona-roller/
 
+西幻女性衍生版: https://aurigacapella.github.io/modern-persona-roller/fantasy/
+
 ## 当前版本
 
 - 版本：Modern v1.6
@@ -30,6 +32,17 @@
 - 单项重抽、锁定、复制人设与 JSON 导出
 - 响应式布局和本地状态保存
 
+## 西幻女性衍生版
+
+`fantasy/index.html` 是独立的 Fantasy v1.0 页面，采用“日式轻小说角色表现 + 传统西幻规则骨架”的混合方向：
+
+- 18 种通用幻想种族、40 类出身和 30 个职业。
+- 种族联动姓名文化、外貌和身高；职业联动定位、武器、护甲和魔法。
+- 可在混合幻想、轻小说高魔和古典西幻三种权重间选择。
+- 可控制稀有设定权重，并选用负面性格、身体痕迹、诅咒与异色瞳。
+- 自动生成称号与剧情钩子，并输出 NovelAI、Animagine XL、通用 Anime 和 GPT Image 提示词。
+- 数据使用通用化原创命名，不收录具体作品的专有角色、国家、技能或组织。
+
 ## 直接使用
 
 双击根目录的 `index.html` 即可运行。
@@ -52,7 +65,10 @@ python -m http.server 8080
 ├── .gitignore              # 本地文件与秘密信息忽略规则
 ├── .nojekyll               # GitHub Pages 静态文件兼容
 ├── tests/
-│   └── prompt-smoke.js     # 提示词批量生成与词条映射检查
+│   ├── prompt-smoke.js     # 现代版提示词批量生成与词条映射检查
+│   └── fantasy-smoke.js    # 西幻版跨字段兼容与提示词检查
+├── fantasy/
+│   └── index.html          # 西幻女性衍生 Roll 机
 └── docs/
     ├── data-model.md       # 随机池、依赖关系和冲突规则
     └── deployment.md       # 静态托管方案
